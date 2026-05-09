@@ -1,0 +1,122 @@
+x-worker-env: &worker-env
+  DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+  MINIO_ENDPOINT: minio:9000
+  MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+  MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+  MINIO_BUCKET: llm-files
+  MINIO_SECURE: "false"
+
+services:
+  traefik:
+    image: traefik:v3.6
+    ports:
+      - "80:80"
+      - "443:443"
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      # Uncomment for HTTPS:
+      # - "--entrypoints.websecure.address=:443"
+      # - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      # - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      # - "--certificatesresolvers.letsencrypt.acme.email=you@example.com"
+      # - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      # - "letsencrypt:/letsencrypt"
+    depends_on:
+      - backend
+      - frontend
+
+  backend:
+    image: ghcr.io/batch4llm/backend:latest
+    command: uvicorn batch4llm.app:app --host 0.0.0.0 --port 8000
+    expose:
+      - "8000"
+    environment:
+      <<: *worker-env
+      MINIO_PUBLIC_URL: http://localhost/storage
+      AUTH_REQUIRED: "true"
+      SECURE_COOKIES: "true"
+      ACCESS_TOKEN_EXPIRE_MINUTES: "1440"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=PathPrefix(`/api`) || PathPrefix(`/health`) || PathPrefix(`/docs`) || Path(`/redoc`) || Path(`/openapi.json`)"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.priority=10"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    depends_on:
+      - db
+      - redis
+      - minio
+
+  frontend:
+    image: ghcr.io/batch4llm/frontend:latest
+    expose:
+      - "80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+    depends_on:
+      - backend
+
+  worker:
+    image: ghcr.io/batch4llm/backend:latest
+    command: celery -A batch4llm.celery.worker worker --loglevel=info
+    environment:
+      <<: *worker-env
+    depends_on:
+      - db
+      - redis
+
+  beat:
+    image: ghcr.io/batch4llm/backend:latest
+    command: celery -A batch4llm.celery.worker beat --loglevel=info
+    environment:
+      <<: *worker-env
+    depends_on:
+      - redis
+
+  db:
+    image: postgres:18
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.rule=PathPrefix(`/storage`)"
+      - "traefik.http.routers.minio.entrypoints=web"
+      - "traefik.http.routers.minio.middlewares=minio-strip"
+      - "traefik.http.routers.minio.priority=10"
+      - "traefik.http.middlewares.minio-strip.stripprefix.prefixes=/storage"
+      - "traefik.http.services.minio.loadbalancer.server.port=9000"
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  # letsencrypt:

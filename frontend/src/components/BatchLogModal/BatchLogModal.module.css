@@ -1,0 +1,171 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 640px;
+    max-width: 900px;
+}
+
+.title {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+
+.titleLabel {
+    color: #9ca3af;
+}
+
+.titleName {
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
+/* ── Log container ───────────────────────────────────────────────── */
+
+.logContainer {
+    display: flex;
+    flex-direction: column;
+    font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 0.78rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+    max-height: 480px;
+    overflow-y: auto;
+}
+
+.logContainer::-webkit-scrollbar {
+    width: 6px;
+}
+
+.logContainer::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.logContainer::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+/* ── Individual row ──────────────────────────────────────────────── */
+
+.logRow {
+    display: grid;
+    grid-template-columns: 11rem 5.5rem 1fr;
+    align-items: baseline;
+    gap: 0 12px;
+    padding: 5px 14px;
+    border-bottom: 1px solid transparent;
+    line-height: 1.6;
+    transition: filter 0.1s;
+}
+
+.logRow:last-child {
+    border-bottom: none;
+}
+
+.logRow:hover {
+    filter: brightness(0.96);
+}
+
+/* ── Level variants ──────────────────────────────────────────────── */
+
+.level_INFO {
+    background-color: #f9fafb;
+    border-bottom-color: #f3f4f6;
+    color: #374151;
+}
+
+.level_WARN {
+    background-color: #fffbeb;
+    border-bottom-color: #fde68a;
+    color: #92400e;
+}
+
+.level_ERROR {
+    background-color: #fff1f2;
+    border-bottom-color: #fecdd3;
+    color: #9f1239;
+}
+
+.level_FATAL {
+    background-color: #1c0a0a;
+    border-bottom-color: #450a0a;
+    color: #fca5a5;
+}
+
+/* ── Cell styles ─────────────────────────────────────────────────── */
+
+.timestamp {
+    color: inherit;
+    opacity: 0.55;
+    white-space: nowrap;
+    font-size: 0.74rem;
+}
+
+.level_FATAL .timestamp {
+    opacity: 0.45;
+}
+
+.level {
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    font-size: 0.72rem;
+}
+
+.level_INFO    .level { color: #6b7280; }
+.level_WARN .level { color: #d97706; }
+.level_ERROR   .level { color: #e11d48; }
+.level_FATAL   .level { color: #f87171; }
+
+.message {
+    word-break: break-word;
+}
+
+/* ── Fetch error ─────────────────────────────────────────────────── */
+
+.fetchError {
+    margin: 0;
+    font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 0.74rem;
+    color: #e11d48;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+
+.empty {
+    padding: 24px 14px;
+    margin: 0;
+    text-align: center;
+    font-family: inherit;
+    font-size: 0.82rem;
+    color: #9ca3af;
+}
+
+/* ── Slide-in Animation für neue Einträge ────────────────────────── */
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.newEntry {
+    animation: slideIn 0.25s ease-out forwards;
+}

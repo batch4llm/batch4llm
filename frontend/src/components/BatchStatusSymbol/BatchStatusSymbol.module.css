@@ -1,0 +1,25 @@
+.statusPill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.statusFailed {
+    background-color: #e53935;
+}
+
+.statusRunning {
+    background-color: #1e88e5;
+}
+
+.statusCompleted {
+    background-color: #43a047;
+}
+
+.statusUnknown {
+    background-color: #757575;
+}

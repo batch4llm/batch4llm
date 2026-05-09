@@ -1,0 +1,25 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      - SECURE_COOKIES=false
+
+  worker:
+    build: ./backend
+    command: celery -A batch4llm.celery.worker worker --loglevel=info -E --concurrency=2
+
+  beat:
+    build: ./backend
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+    environment:
+      - VITE_API_TARGET=http://traefik:80
+    labels:
+      - "traefik.http.services.frontend.loadbalancer.server.port=5173"

@@ -1,0 +1,40 @@
+info:
+  name: upload_file
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/files/upload"
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        type: file
+        value:
+          - ../../tests/fixtures/sample-2.pdf
+      - name: tags
+        type: text
+        value: test
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.getStatus() === 200) {
+          var newId = res.getBody().id;
+          
+          var ids = bru.getVar("uploaded_file_ids");
+          ids = ids ? JSON.parse(ids) : [];
+          
+          ids.push(newId);
+          
+          bru.setVar("uploaded_file_ids", JSON.stringify(ids));
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

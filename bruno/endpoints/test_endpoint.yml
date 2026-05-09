@@ -1,0 +1,32 @@
+info:
+  name: test_endpoint
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/endpoints/test"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "test_endpoint",
+        "client": "test",
+        "provider": "self_hosted"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.getStatus() === 200) {
+          var newId = res.getBody().id;
+          bru.setVar("endpoint_id", newId);
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

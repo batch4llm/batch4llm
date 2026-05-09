@@ -1,0 +1,24 @@
+info:
+  name: list_batch_results
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/batches/files/:id"
+  params:
+    - name: id
+      value: "{{batch_id}}"
+      type: path
+  auth: inherit
+
+runtime:
+  variables:
+    - name: batch_id
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

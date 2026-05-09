@@ -1,0 +1,23 @@
+info:
+  name: get_logs
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/batches/log/:id"
+  params:
+    - name: after_id
+      value: "183"
+      type: query
+      disabled: true
+    - name: id
+      value: "{{batch_id}}"
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

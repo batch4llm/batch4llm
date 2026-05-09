@@ -1,0 +1,52 @@
+.toggleWrapper {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--surface-2, #f0f0f0);
+    border: 1px solid var(--border, #e0e0e0);
+    border-radius: 10px;
+    padding: 3px;
+}
+
+.toggleIndicator {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: calc(50% - 3px);
+    height: calc(100% - 6px);
+    background: var(--surface-3, #ffffff);
+    border: 1px solid var(--border-light, #d8d8d8);
+    border-radius: 8px;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.toggleBtn {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-muted, #aaa);
+    cursor: pointer;
+    transition: color 0.15s ease;
+    letter-spacing: -0.1px;
+    font-family: inherit;
+}
+
+.toggleBtn:hover {
+    background: transparent;
+    color: var(--text-muted, #aaa);
+}
+
+.toggleBtn.toggleActive:hover {
+    color: var(--text-primary, #111);
+}
+
+.toggleActive {
+    color: var(--text-primary, #111);
+}

@@ -1,0 +1,19 @@
+info:
+  name: check_health
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/endpoints/health/:id"
+  params:
+    - name: id
+      value: "{{endpoint_id}}"
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

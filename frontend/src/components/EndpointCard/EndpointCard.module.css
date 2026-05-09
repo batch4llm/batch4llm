@@ -1,0 +1,160 @@
+.card {
+    position: relative;
+    background: var(--bg-surface);
+    border: 1.5px solid #e5e5e5;
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.card:hover {
+    border-color: #c8c8c8;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.07);
+}
+
+/* ── Health pulse ─────────────────────────── */
+.pulse {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pulseDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    position: relative;
+    z-index: 1;
+}
+
+.pulseOk .pulseDot   { background: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.14); }
+.pulseDown .pulseDot { background: #c53030; box-shadow: 0 0 0 3px rgba(197, 48, 48, 0.14); }
+.pulseIdle .pulseDot { background: #c8c8c8; box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04); }
+
+.pulseOk::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: #16a34a;
+    opacity: 0.35;
+    animation: healthPulse 2.4s ease-out infinite;
+}
+
+@keyframes healthPulse {
+    0%   { transform: scale(0.55); opacity: 0.35; }
+    80%  { transform: scale(1.6);  opacity: 0; }
+    100% { transform: scale(1.6);  opacity: 0; }
+}
+
+/* ── Card top row ─────────────────────────── */
+.top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #fafafa;
+    border: 1px solid #e5e5e5;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+    box-sizing: border-box;
+}
+
+.heading {
+    flex: 1;
+    min-width: 0;
+}
+
+.name {
+    margin: 0 0 2px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    color: var(--text-primary);
+    font-family: var(--font-base);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    letter-spacing: -0.05px;
+}
+
+.metaSep { color: #d8d8d8; }
+
+/* ── Metadata list ────────────────────────── */
+.metaList {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.metaRow {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 10px;
+    align-items: baseline;
+}
+
+.metaRow dt {
+    color: #aaa;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    line-height: 1.45;
+}
+
+.metaRow dd {
+    margin: 0;
+    color: var(--text-secondary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.45;
+}
+
+.ddMono {
+    color: var(--text-primary);
+    letter-spacing: 0.5px;
+}
+
+.ddEmpty {
+    color: #b8b8b8;
+    font-family: var(--font-base);
+    font-style: italic;
+}

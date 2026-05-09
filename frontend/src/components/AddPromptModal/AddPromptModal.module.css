@@ -1,0 +1,28 @@
+.promptForm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.promptForm input,
+.promptForm textarea {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 0.95rem;
+    resize: vertical;
+}
+
+.promptForm button {
+    padding: 0.5rem 1rem;
+}
+
+.fileUpload {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.separator {
+    text-align: center;
+    margin: 0.75rem 0;
+    opacity: 0.6;
+}

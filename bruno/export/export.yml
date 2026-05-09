@@ -1,0 +1,22 @@
+info:
+  name: export
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/export/batches?mode=raw_csv&batch_ids={{batch_id}}"
+  params:
+    - name: mode
+      value: raw_csv
+      type: query
+    - name: batch_ids
+      value: "{{batch_id}}"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

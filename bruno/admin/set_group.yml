@@ -1,0 +1,22 @@
+info:
+  name: set_group
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/set_group?username=&group_id="
+  params:
+    - name: username
+      value: ""
+      type: query
+    - name: group_id
+      value: ""
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

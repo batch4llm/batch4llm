@@ -1,0 +1,74 @@
+.batchStartForm {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.batchStartForm label {
+    font-weight: 500;
+}
+
+.batchStartForm input,
+.batchStartForm select,
+.batchStartForm button {
+    padding: 0.5rem;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.batchStartForm select {
+    min-width: 0;
+}
+
+.advancedSection {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.advancedToggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: inherit;
+    opacity: 0.75;
+    padding: 6px 8px;
+    margin-left: -8px;
+    border-radius: 4px;
+    text-align: left;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.advancedToggle:hover {
+    opacity: 1;
+    background-color: rgba(128, 128, 128, 0.15);
+}
+
+.advancedArrow {
+    font-size: 0.65rem;
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+.advancedArrowOpen {
+    transform: rotate(90deg);
+}
+
+.advancedFields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    padding: 10px 0 4px 16px;
+    border-left: 2px solid currentColor;
+    opacity: 0.85;
+    margin-top: 4px;
+}

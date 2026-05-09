@@ -1,0 +1,19 @@
+info:
+  name: delete_file
+  type: http
+  seq: 2
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/api/files/delete/:id"
+  params:
+    - name: id
+      value: "169"
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

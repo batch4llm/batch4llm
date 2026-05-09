@@ -1,0 +1,12 @@
+services:
+  backend:
+    build: ./backend
+
+  worker:
+    build: ./backend
+
+  beat:
+    build: ./backend
+
+  frontend:
+    build: ./frontend

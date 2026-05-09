@@ -1,0 +1,271 @@
+:root {
+    /* 1. Primitive tokens – rohe Farbwerte */
+    --color-navy-900: #1e1e2f;
+    --color-navy-800: #30304a;
+    --color-navy-700: #51517c;
+    --color-white:    #ffffff;
+    --color-gray-50:  #f4f4f4;
+    --color-gray-100: #f1f3f5;
+    --color-gray-500: #6b7280;
+    --color-gray-900: #111827;
+
+    /* 2. Semantic tokens – was die Farbe *bedeutet* */
+
+    /* Backgrounds */
+    --bg-app:         var(--color-gray-50);
+    --bg-surface:     var(--color-white);
+    --bg-sidebar:     var(--color-navy-900);
+
+    /* Text */
+    --text-primary:   var(--color-gray-900);
+    --text-secondary: var(--color-gray-500);
+    --text-on-dark:   var(--color-white);
+
+    /* Text */
+    --button-primary:   var(--color-navy-900);
+    --button-hover:   var(--color-navy-700);
+
+    /* Accent / Interactive */
+    --accent:         var(--color-navy-900);
+    --accent-hover:   var(--color-navy-900);
+
+    /* Border */
+    --border:         var(--color-gray-100);
+
+
+    /* Colors */
+    --color-bg: #f4f4f4;
+    --color-text: #222;
+
+    --color-hover: #7eb3dd;
+    --color-selectable: #2196f3;
+    --color-click: #0b7dda;
+    --color-button-text: #ffffff;
+
+    --color-sidebar-bg: #1f1f1f;
+    --color-sidebar-text: #ffffff;
+
+    --color-card-bg: #ffffff;
+    --color-border: #ddd;
+    --color-dropzone-border: #888;
+
+    --color-overlay: rgba(0,0,0,0.55);
+
+    /* Fonts */
+    --font-base: Arial, sans-serif;
+
+    /* Surfaces */
+    --surface-1: #ffffff;
+    --surface-2: #fafafa;
+    --surface-3: #ffffff;
+
+    /* Text muted */
+    --text-muted: #888;
+
+    /* Borders */
+    --border-light: #d8d8d8;
+    --border-hover: #c8c8c8;
+
+    /* Accent hover (navy) */
+    --accent-hover: var(--color-navy-700);
+
+    /* Spacing / Radius */
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 10px;
+    --radius-xl: 12px;
+
+    /* Shadows */
+    --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.10);
+    --shadow-pop:  0 3px 10px rgba(0, 0, 0, 0.07);
+    --shadow-form: 0 10px 25px rgba(0, 0, 0, 0.10);
+}
+
+body {
+    margin: 0;
+    background: var(--bg-app);
+    font-family: var(--font-base);
+    color: var(--color-text);
+}
+
+/* Login Page */
+
+.auth-switch {
+    margin-top: 12px;
+    font-size: 0.9rem;
+}
+
+.auth-switch a {
+    margin-left: 6px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+
+.card {
+    background: var(--color-card-bg);
+    padding: 20px;
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+/* Dropzone */
+
+.dropzone {
+    border: 2px dashed var(--color-dropzone-border);
+    padding: 30px;
+    text-align: center;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    cursor: pointer;
+}
+
+.dropzone.drag {
+    background: var(--color-hover);
+    border-color: var(--color-dropzone-border);
+}
+
+/* Forms */
+
+.flex {
+    display: flex;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.flex-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 5px;
+}
+
+select, button, input {
+    padding: 10px;
+    font-size: 15px;
+    margin: 3px;
+}
+
+button {
+    padding: 12px;
+    background-color: var(--button-primary);
+    color: var(--text-on-dark);
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+button:hover {
+    background-color: var(--button-hover);
+}
+button:active {
+    transform: scale(0.98);
+}
+
+/* Tables */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--color-card-bg);
+}
+
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+th {
+    background: var(--color-bg);
+    text-align: left;
+}
+
+/* Footer */
+
+footer {
+    margin-top: 60px;
+    padding: 20px 0;
+    color: #555; /* Only color not reused elsewhere; want a variable for it? */
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Overlay */
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--color-overlay);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.overlay-content {
+    background: var(--color-card-bg);
+    padding: 20px;
+    width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    border-radius: var(--radius-md);
+    position: relative;
+}
+
+.overlay.hidden {
+    display: none;
+}
+
+#selectedFilesList li {
+    border-bottom: 1px solid #ddd;
+    padding: 4px 0;
+}
+
+.text-grey {
+    color: #a3a3a3;
+}
+
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    background-color: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+
+/* Form Grid */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 12px 16px;
+    align-items: center;
+    max-width: 500px;
+}
+
+.form-grid label {
+    text-align: right;
+    font-weight: 500;
+}
+
+.form-grid input,
+.form-grid select {
+    width: 100%;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+

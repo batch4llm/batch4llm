@@ -1,0 +1,118 @@
+/* ── Shared modal interior ───────────────────────────────────
+   Import this file in modal components to access these classes.
+   ─────────────────────────────────────────────────────────── */
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.modalTypeBadge {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background: #f4f4f4;
+  color: #51517c;
+  border: 1px solid #e5e5e5;
+  flex-shrink: 0;
+}
+
+.modalTitleBlock { flex: 1; min-width: 0; }
+
+.modalTitle {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modalSub {
+  margin: 0;
+  font-size: 13px;
+  color: #888;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.modalSep { color: #d8d8d8; }
+
+.modalClose {
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 4px;
+  margin: 0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.modalClose:hover { background: #f1f3f5; color: #111827; }
+
+.modalTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 0;
+  border-top: 1px solid #f1f3f5;
+  border-bottom: 1px solid #f1f3f5;
+  margin-bottom: 16px;
+}
+
+.modalFooter { display: flex; justify-content: flex-end; margin-top: 16px; }
+
+.btnSecondary {
+  background: #f1f3f5;
+  color: #111827;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  margin: 0;
+  transition: background 0.15s ease;
+}
+
+.btnSecondary:hover { background: #e5e7eb; }
+
+/* ─────────────────────────────────────────────────────────── */
+
+.backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    min-width: 300px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+}

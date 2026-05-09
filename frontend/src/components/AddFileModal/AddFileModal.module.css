@@ -1,0 +1,20 @@
+.dropzone {
+    border: 2px dashed #aaa;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.dropzone:hover {
+    background: #f5f5f5;
+}
+
+.fileList {
+    margin: 12px 0;
+    padding-left: 16px;
+}
+
+.form {
+    display: flex;
+    gap: 8px;
+}

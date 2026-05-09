@@ -1,0 +1,196 @@
+.page {
+    padding: 1.5rem 2rem;
+    max-width: 860px;
+    margin: 0 auto;
+}
+
+/* ── Card list ────────────────────────────────────────────────────────────── */
+.batchList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.batchCard {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    user-select: none;
+}
+
+.batchCard:hover {
+    border-color: var(--color-hover);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+}
+
+.batchCard:focus-visible {
+    outline: 2px solid var(--color-selectable);
+    outline-offset: 2px;
+}
+
+/* ── Top row ──────────────────────────────────────────────────────────────── */
+.cardTop {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.batchId {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 0.04em;
+    min-width: 2.5rem;
+}
+
+.model {
+    font-size: 0.75rem;
+    color: #888;
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+/* ── Clickable chips (endpoint / prompt) ──────────────────────────────────── */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.2rem 0.5rem;
+    cursor: pointer;
+    transition: border-color 0.12s ease, background 0.12s ease;
+    white-space: nowrap;
+    max-width: 200px;
+    /* override global button styles */
+    font-family: var(--font-base);
+    color: var(--color-text);
+    margin: 0;
+    box-shadow: none;
+    font-size: inherit;
+}
+
+.chip:hover {
+    border-color: var(--color-selectable);
+    background: #e8f3fc;
+}
+
+.chipLabel {
+    font-size: 0.63rem;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.chipValue {
+    font-size: 0.74rem;
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 130px;
+}
+
+/* ── Mid row ──────────────────────────────────────────────────────────────── */
+.cardMid {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.progressWrap,
+.timerWrap,
+.costsWrap {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+}
+
+.progressLabel {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #aaa;
+}
+
+.progressValue {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+/* ── Action row ───────────────────────────────────────────────────────────── */
+.cardActions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--color-border);
+    gap: 0.5rem;
+}
+
+.cardActionsLeft {
+    display: flex;
+    gap: 0.4rem;
+}
+
+/* ── Small icon buttons ───────────────────────────────────────────────────── */
+.iconBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 0.28rem 0.6rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    color: #555;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    white-space: nowrap;
+    /* override global button styles */
+    font-family: var(--font-base);
+    box-shadow: none;
+    margin: 0;
+}
+
+.iconBtn:hover {
+    background: #e8f3fc;
+    border-color: var(--color-selectable);
+    color: var(--color-click);
+}
+
+.iconBtn:active {
+    transform: scale(0.97);
+}
+
+.stopBtn {
+    color: #c0392b;
+    border-color: #f5c6c2;
+    background: #fff5f5;
+    margin-left: auto;
+}
+
+.stopBtn:hover {
+    background: #fde8e8;
+    border-color: #e74c3c;
+    color: #c0392b;
+}
+
+/* ── Start button wrapper ─────────────────────────────────────────────────── */
+.startWrap {
+    text-align: center;
+    margin-top: 1.25rem;
+}

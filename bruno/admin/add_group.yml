@@ -1,0 +1,19 @@
+info:
+  name: add_group
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/add_group?group_name=test"
+  params:
+    - name: group_name
+      value: test
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

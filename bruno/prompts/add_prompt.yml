@@ -1,0 +1,32 @@
+info:
+  name: add_prompt
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/prompts/add"
+  body:
+    type: json
+    data: |
+      {
+        "name": "test_prompt",
+        "content": "this is a simple prompt",
+        "multi_prompt": false
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.getStatus() === 200) {
+          var newId = res.getBody().id;
+          bru.setVar("prompt_id", newId);
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

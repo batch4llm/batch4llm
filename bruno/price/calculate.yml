@@ -1,0 +1,26 @@
+info:
+  name: calculate
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/price/calculate"
+  body:
+    type: json
+    data: |-
+      {
+        "provider": "OpenAI",
+        "model": "gpt-4o",
+        "file_reader": "pymupdf_default",
+        "file_ids": {{uploaded_file_ids}},
+        "prompt": "this is a test prompt",
+        "output": "some test output"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
