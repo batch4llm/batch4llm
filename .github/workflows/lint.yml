@@ -32,10 +32,10 @@ jobs:
           pip install black ruff
 
       - name: Run Ruff
-        run: ruff check src tests
+        run: ruff check backend
 
       - name: Run Black
-        run: black --check src tests
+        run: black --check backend
 
       - name: Setup Node.js
         uses: actions/setup-node@v3

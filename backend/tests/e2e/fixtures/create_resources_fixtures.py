@@ -4,7 +4,7 @@ import uuid
 
 @pytest.fixture(scope="session")
 def upload_file(authenticated_client):
-    pdf_bytes = open("tests/fixtures/sample-1.pdf", "rb").read()
+    pdf_bytes = open("backend/tests/fixtures/sample-1.pdf", "rb").read()
     r = authenticated_client.post(
         "/api/files/upload",
         json={"tags": ["test_tag"]},

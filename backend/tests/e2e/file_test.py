@@ -3,7 +3,7 @@ def test_file_workflow(authenticated_client):
     r = authenticated_client.get("/api/files/")
     assert r.status_code == 200
 
-    pdf_bytes = open("tests/fixtures/sample-1.pdf", "rb").read()
+    pdf_bytes = open("backend/tests/fixtures/sample-1.pdf", "rb").read()
 
     # Upload a file
     r = authenticated_client.post(
