@@ -48,3 +48,36 @@
     cursor: pointer;
     border-radius: 0.25rem;
 }
+
+.profileButton {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text-on-dark);
+    cursor: pointer;
+    padding: 0.4rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.profileButton:hover {
+    background-color: var(--color-navy-800);
+}
+
+.sidebarAvatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-navy-800);
+    color: var(--text-on-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    flex-shrink: 0;
+}

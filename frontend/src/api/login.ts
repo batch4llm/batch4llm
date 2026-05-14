@@ -19,4 +19,12 @@ export const LoginAPI = {
         api
             .post<SuccessResponse>("/authentication/logout")
             .then(r => r.data.success),
+
+    changePassword: (oldPassword: string, newPassword: string): Promise<boolean> =>
+        api
+            .post<SuccessResponse>("/authentication/change-password", {
+                old_password: oldPassword,
+                new_password: newPassword,
+            })
+            .then(r => r.data.success),
 };
