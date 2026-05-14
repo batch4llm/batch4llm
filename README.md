@@ -1,5 +1,3 @@
-Batch4LLM is an all-in-one solution for scientific file evaluation using LLMs. It provides a web dashboard to easily create and manage batches with different models and settings, and to access and export results efficiently. It also supports existing batch APIs from supported providers (OpenAI, Google), allowing you to process large numbers of files without the need for a constantly running server, while reducing API costs (see [Roadmap](#roadmap)).   
-
 <br>
 
 > [!WARNING]
@@ -24,7 +22,7 @@ This is recommended for production.
 ```
 2. Place the [compose.yaml](/compose.yaml) file inside this directory.
 ```
-   curl -L https://raw.githubusercontent.com/Benjino16/batch4llm/main/compose.yaml -o compose.yaml
+   curl -L https://raw.githubusercontent.com/batch4llm/batch4llm/main/compose.yaml -o compose.yaml
 ```
 
 3. Start the service:
@@ -44,7 +42,7 @@ This is recommended for production.
 
 1. **Clone the repository:**
   ```bash
-   git clone https://github.com/Benjino16/batch4llm.git
+   git clone https://github.com/batch4llm/batch4llm.git
   ```
 2. **Navigate to the project directory:**
   ```bash

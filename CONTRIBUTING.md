@@ -11,7 +11,7 @@
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Benjino16/batch4llm.git
+git clone https://github.com/batch4llm/batch4llm.git
 cd batch4llm
 ```
 
