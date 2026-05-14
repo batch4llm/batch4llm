@@ -19,3 +19,6 @@ class UserService:
 
     def does_any_user_exist(self) -> bool:
         return self.db.users.does_any_user_exist()
+
+    def get_user_group(self, group_id: int) -> dict | None:
+        return self.db.groups.get_by_id_with_users(group_id)
