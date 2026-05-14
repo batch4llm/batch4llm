@@ -43,6 +43,14 @@ class UserOps:
         with self.SessionLocal() as session:
             return [e.to_dict_public() for e in session.query(User).all()]
 
+    def update_password_hash(self, username: str, password_hash: str):
+        with self.SessionLocal() as session:
+            user = session.query(User).filter_by(username=username).first()
+            if not user:
+                raise ValueError(f"User '{username}' not found.")
+            user.password_hash = password_hash
+            session.commit()
+
     def set_group(self, username: str, group_id: int):
         with self.SessionLocal() as session:
             user = session.query(User).filter_by(username=username).first()

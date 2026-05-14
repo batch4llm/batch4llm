@@ -40,6 +40,20 @@ def list_users():
 
 
 @user_app.command()
+def reset_password(
+    username: Annotated[str, typer.Argument(help="Username")],
+    password: Annotated[str, typer.Argument(help="New password (min. 6 characters)")],
+):
+    """Set a new password for a user."""
+    try:
+        get_login_service().reset_password(username, password)
+        typer.echo(f"Password for '{username}' updated.")
+    except ValueError as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@user_app.command()
 def set_group(
     username: Annotated[str, typer.Argument(help="Username")],
     group_id: Annotated[int, typer.Argument(help="Group ID")],
