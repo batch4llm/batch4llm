@@ -29,6 +29,7 @@ dev = [
     "httpx",
     "black",
     "ruff",
+    "pre-commit",
     "celery-types",
 ]
 
