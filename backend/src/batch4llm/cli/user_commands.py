@@ -10,11 +10,15 @@ user_app = typer.Typer(help="Manage users.", no_args_is_help=True)
 def create(
     username: Annotated[str, typer.Argument(help="Username (3–10 characters)")],
     password: Annotated[str, typer.Argument(help="Password (min. 6 characters)")],
-    admin: Annotated[bool, typer.Option("--admin", help="Grant admin privileges")] = False,
+    admin: Annotated[
+        bool, typer.Option("--admin", help="Grant admin privileges")
+    ] = False,
 ):
     """Create a new user."""
     try:
-        get_login_service().register_user(username, password, is_admin=True if admin else None)
+        get_login_service().register_user(
+            username, password, is_admin=True if admin else None
+        )
         role = "admin" if admin else "user"
         typer.echo(f"Created {role} '{username}'.")
     except ValueError as e:

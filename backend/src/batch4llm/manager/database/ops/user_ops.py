@@ -14,7 +14,9 @@ class UserOps:
         with self.SessionLocal() as session:
             user_exists = session.query(User).first()
             resolved_admin = is_admin if is_admin is not None else not bool(user_exists)
-            user = User(username=username, password_hash=password_hash, is_admin=resolved_admin)
+            user = User(
+                username=username, password_hash=password_hash, is_admin=resolved_admin
+            )
             session.add(user)
             session.commit()
 

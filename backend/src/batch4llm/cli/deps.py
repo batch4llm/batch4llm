@@ -17,7 +17,9 @@ def get_db() -> Database:
 
 
 def get_login_service() -> LoginService:
-    return LoginService(get_db(), secret_key="", algorithm="HS256", token_expire_minutes=0)
+    return LoginService(
+        get_db(), secret_key="", algorithm="HS256", token_expire_minutes=0
+    )
 
 
 def get_user_service() -> UserService:
