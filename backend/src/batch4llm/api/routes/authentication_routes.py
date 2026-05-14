@@ -33,7 +33,9 @@ def build_authentication_router(
         return {"success": True, "username": user["username"]}
 
     @router.post("/change-password", response_model=dict)
-    def change_password(request: ChangePasswordRequest, user=Security(jwt_authenticator)):
+    def change_password(
+        request: ChangePasswordRequest, user=Security(jwt_authenticator)
+    ):
         try:
             login_service.change_password(
                 user["username"], request.old_password, request.new_password
