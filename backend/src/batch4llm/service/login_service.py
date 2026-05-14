@@ -30,6 +30,11 @@ class LoginService:
         except Exception:
             return False
 
+    def _hash_password(self, password: str) -> str:
+        if len(password) < 6:
+            raise ValueError("Password must be at least 6 characters")
+        return ph.hash(password)
+
     def register_user(
         self, username: str, password: str, is_admin: bool | None = None
     ) -> bool:
@@ -37,18 +42,28 @@ class LoginService:
             raise ValueError("Username must be at least 3 characters")
         if len(username) > 10:
             raise ValueError("Username must be a max of 10 characters")
-        if len(password) < 6:
-            raise ValueError("Password must be at least 6 characters")
 
         user = self.db.users.get_by_username(username=username)
         if user:
             raise ValueError("Username already exists")
 
-        hashed_password = ph.hash(password)
         self.db.users.add(
-            username=username, password_hash=hashed_password, is_admin=is_admin
+            username=username,
+            password_hash=self._hash_password(password),
+            is_admin=is_admin,
         )
         return True
+
+    def reset_password(self, username: str, new_password: str):
+        user = self.db.users.get_by_username(username=username)
+        if not user:
+            raise ValueError(f"User '{username}' not found.")
+        self.db.users.update_password_hash(username, self._hash_password(new_password))
+
+    def change_password(self, username: str, old_password: str, new_password: str):
+        if not self.verify_password(username, old_password):
+            raise ValueError("Current password is incorrect.")
+        self.db.users.update_password_hash(username, self._hash_password(new_password))
 
     def create_access_token(self, username: str):
         expire = datetime.utcnow() + timedelta(minutes=self.token_expire_minutes)
