@@ -30,7 +30,7 @@ class LoginService:
         except Exception:
             return False
 
-    def register_user(self, username: str, password: str) -> bool:
+    def register_user(self, username: str, password: str, is_admin: bool | None = None) -> bool:
         if len(username) < 3:
             raise ValueError("Username must be at least 3 characters")
         if len(username) > 10:
@@ -43,7 +43,7 @@ class LoginService:
             raise ValueError("Username already exists")
 
         hashed_password = ph.hash(password)
-        self.db.users.add(username=username, password_hash=hashed_password)
+        self.db.users.add(username=username, password_hash=hashed_password, is_admin=is_admin)
         return True
 
     def create_access_token(self, username: str):

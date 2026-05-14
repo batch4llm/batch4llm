@@ -19,3 +19,4 @@ minio
 pydantic
 pydantic_settings
 requests
+typer
