@@ -32,6 +32,14 @@ cd frontend
 npm install
 ```
 
+### 4. Pre-commit hooks
+
+```bash
+pre-commit install
+```
+
+This registers a Git hook that runs Black, Ruff, and ESLint automatically before every commit. If any check fails, the commit is aborted and the output shows what needs to be fixed.
+
 ## Running locally
 
 ```bash
@@ -49,11 +57,24 @@ pytest
 
 ## Linting
 
+The pre-commit hook checks linting automatically on every commit. To run manually:
+
 ```bash
 # Backend
 ruff check src
 black --check src
 
 # Frontend
-npm run lint
+cd frontend && npm run lint
+```
+
+To auto-fix:
+
+```bash
+# Backend
+ruff check --fix src
+black src
+
+# Frontend
+cd frontend && npx eslint --fix .
 ```
