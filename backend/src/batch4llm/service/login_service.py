@@ -60,6 +60,11 @@ class LoginService:
             raise ValueError(f"User '{username}' not found.")
         self.db.users.update_password_hash(username, self._hash_password(new_password))
 
+    def change_password(self, username: str, old_password: str, new_password: str):
+        if not self.verify_password(username, old_password):
+            raise ValueError("Current password is incorrect.")
+        self.db.users.update_password_hash(username, self._hash_password(new_password))
+
     def create_access_token(self, username: str):
         expire = datetime.utcnow() + timedelta(minutes=self.token_expire_minutes)
         payload = {"sub": str(username), "exp": expire}
