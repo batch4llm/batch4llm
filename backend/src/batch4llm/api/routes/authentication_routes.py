@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Response, HTTPException, Security
 from batch4llm.service.login_service import LoginService
-from ..models.login_models import LoginRequest, RegisterRequest
+from ..models.login_models import LoginRequest
 from batch4llm.service.jwt_authenticator import JWTAuthenticator
 
 
@@ -27,14 +27,6 @@ def build_authentication_router(
         )
 
         return {"success": True}
-
-    @router.post("/register", response_model=dict)
-    def register(request: RegisterRequest):
-        try:
-            success = login_service.register_user(request.username, request.password)
-            return {"success": success}
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
 
     @router.get("/me", response_model=dict)
     def me(user=Security(jwt_authenticator)):

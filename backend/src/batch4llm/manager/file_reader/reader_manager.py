@@ -1,6 +1,5 @@
 from typing import Dict, Tuple, Type, BinaryIO
 from batch4llm.manager.file_reader.base import BaseFileReader
-from batch4llm.manager.file_reader.pypdf2_reader import PyPDF2FileReader
 from batch4llm.manager.file_reader.pymupdf_reader import PyMuPDFFileReader
 
 
@@ -33,5 +32,4 @@ class FileReaderManager:
 
 
 # register default readers
-FileReaderManager.register(PyPDF2FileReader)
 FileReaderManager.register(PyMuPDFFileReader)

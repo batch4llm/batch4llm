@@ -1,10 +1,13 @@
+import os
+import subprocess
 import time
 import httpx
 import pytest
-import uuid
 from fixtures import upload_file, create_endpoint, create_prompt  # noqa: F401
 
 BASE_URL = "http://localhost"
+TEST_USERNAME = os.environ.get("TEST_USERNAME", "testuser")
+TEST_PASSWORD = os.environ.get("TEST_PASSWORD", "testpass")
 
 
 def wait_for_backend(retries=30, delay=1):
@@ -22,8 +25,30 @@ def wait_for_backend(retries=30, delay=1):
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_backend_ready():
-    """Session fixture that ensures the backend is running."""
     wait_for_backend()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_user(ensure_backend_ready):
+    subprocess.run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            "compose.yaml",
+            "-f",
+            "compose.dev.yaml",
+            "exec",
+            "-T",
+            "backend",
+            "b4",
+            "user",
+            "create",
+            TEST_USERNAME,
+            TEST_PASSWORD,
+        ],
+        capture_output=True,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -33,18 +58,10 @@ def client():
 
 
 @pytest.fixture(scope="session")
-def authenticated_client(client):
-    """Registers and logs in a test user."""
-    session_username = str(uuid.uuid4())[:8]
-    r = client.post(
-        "/api/authentication/register",
-        json={"username": session_username, "password": "123456"},
-    )
-    assert r.status_code == 200
-
+def authenticated_client(client, setup_test_user):
     r = client.post(
         "/api/authentication/login",
-        json={"username": session_username, "password": "123456"},
+        json={"username": TEST_USERNAME, "password": TEST_PASSWORD},
     )
-    assert r.status_code == 200
+    assert r.status_code == 200, "Login fehlgeschlagen — läuft der Stack?"
     return client
