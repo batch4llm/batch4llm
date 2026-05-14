@@ -10,11 +10,13 @@ class UserOps:
     def __init__(self, session_local: sessionmaker):
         self.SessionLocal = session_local
 
-    def add(self, username: str, password_hash: str):
+    def add(self, username: str, password_hash: str, is_admin: bool | None = None):
         with self.SessionLocal() as session:
             user_exists = session.query(User).first()
-            admin = not bool(user_exists)
-            user = User(username=username, password_hash=password_hash, is_admin=admin)
+            resolved_admin = is_admin if is_admin is not None else not bool(user_exists)
+            user = User(
+                username=username, password_hash=password_hash, is_admin=resolved_admin
+            )
             session.add(user)
             session.commit()
 

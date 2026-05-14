@@ -16,6 +16,11 @@ authors = [{ name = "Ben Kathöfer", email = "benjino@posteo.de" }]
 license = { text = "MIT" }
 requires-python = ">=3.10"
 
+[project.scripts]
+batch4llm = "batch4llm.cli:app"
+b4llm = "batch4llm.cli:app"
+b4 = "batch4llm.cli:app"
+
 [project.optional-dependencies]
 dev = [
     "pytest",
