@@ -1,21 +1,18 @@
+import { useEffect, useState } from "react";
 import {NavLink, useNavigate} from "react-router-dom";
 import styles from "./Sidebar.module.css";
-import { LoginAPI } from "../../api/login.ts"
+import { UserAPI } from "../../api/user.ts";
 
 export default function Sidebar() {
 
     const navigate = useNavigate();
+    const [username, setUsername] = useState<string | null>(null);
 
-    function handleLogout() {
-        LoginAPI.logout().then((res) => {
-            if(res) {
-                navigate("/login")
-            }
-        }).catch((err) => {
-            console.log(err);
-            alert(err)
-        })
-    }
+    useEffect(() => {
+        UserAPI.getMe().then(u => setUsername(u.username)).catch(() => {});
+    }, []);
+
+    const initial = username?.[0]?.toUpperCase() ?? "?";
 
     return (
         <aside className={styles.sidebar}>
@@ -41,7 +38,10 @@ export default function Sidebar() {
             </div>
 
             <div className={styles.sidebarFooter}>
-                <button className={styles.logoutButton} onClick={handleLogout}>Logout</button>
+                <button className={styles.profileButton} onClick={() => navigate("/account")}>
+                    <span className={styles.sidebarAvatar}>{initial}</span>
+                    <span>{username ?? "…"}</span>
+                </button>
             </div>
         </aside>
     );

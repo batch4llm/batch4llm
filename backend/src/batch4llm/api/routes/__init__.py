@@ -8,6 +8,7 @@ from .price_routes import build_price_router
 from .prompt_routes import build_prompt_router
 from .authentication_routes import build_authentication_router
 from .admin_routes import build_admin_router
+from .user_routes import build_user_router
 
 
 def build_router(
@@ -31,4 +32,5 @@ def build_router(
     router.include_router(build_authentication_router(login_service, jwt_authenticator))
     router.include_router(build_price_router(price_service, jwt_authenticator))
     router.include_router(build_admin_router(user_service, jwt_authenticator))
+    router.include_router(build_user_router(user_service, jwt_authenticator))
     return router

@@ -8,6 +8,7 @@ import FilesPage from "./pages/FilesPage/FilesPage.tsx";
 import EndpointsPage from "./pages/EndpointsPage/EndpointsPage.tsx";
 import ExportPage from "./pages/ExportPage/ExportPage.tsx";
 import NotFoundPage from "./pages/NotFoundPage/NotFoundPage.tsx";
+import AccountPage from "./pages/AccountPage/AccountPage.tsx";
 
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
                         <Route path="/files" element={<FilesPage />} />
                         <Route path="/endpoints" element={<EndpointsPage />} />
                         <Route path="/export" element={<ExportPage />} />
+                        <Route path="/account" element={<AccountPage />} />
                     </Route>
                 </Route>
 
