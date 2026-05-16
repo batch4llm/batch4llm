@@ -6,6 +6,11 @@ info:
 http:
   method: GET
   url: "{{baseUrl}}/api/batches"
+  params:
+    - name: archived
+      value: "true"
+      type: query
+      disabled: true
   auth: inherit
 
 runtime:

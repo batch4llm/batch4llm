@@ -1,0 +1,19 @@
+info:
+  name: archive_endpoint
+  type: http
+  seq: 6
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/endpoints/:id/archive"
+  params:
+    - name: id
+      value: "{{endpoint_id}}"
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

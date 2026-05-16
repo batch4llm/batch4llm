@@ -6,6 +6,10 @@ info:
 http:
   method: GET
   url: "{{baseUrl}}/api/endpoints"
+  params:
+    - name: archived
+      value: ""
+      type: query
   auth: inherit
 
 runtime:

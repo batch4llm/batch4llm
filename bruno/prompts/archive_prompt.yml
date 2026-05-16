@@ -1,0 +1,19 @@
+info:
+  name: archive_prompt
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/prompts/:id/archive"
+  params:
+    - name: id
+      value: "{{prompt_id}}"
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
