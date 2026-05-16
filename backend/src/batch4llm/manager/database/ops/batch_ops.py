@@ -313,11 +313,12 @@ class BatchOps:
                 for bl in query.order_by(asc(BatchLogEntry.created_at)).all()
             ]
 
-    def list(self, user_id: int):
+    def list(self, user_id: int, archived: bool | None = None):
         with self.SessionLocal() as session:
+            query = Batch.accessible_by(session.query(Batch), user_id)
+            query = Batch.filter_archived(query, archived)
             batches = (
-                Batch.accessible_by(session.query(Batch), user_id)
-                .outerjoin(Prompt, Batch.prompt_id == Prompt.id)
+                query.outerjoin(Prompt, Batch.prompt_id == Prompt.id)
                 .outerjoin(Endpoint, Batch.endpoint_id == Endpoint.id)
                 .add_columns(
                     Prompt.name.label("prompt_name"),
@@ -340,6 +341,17 @@ class BatchOps:
                 batch_dict["endpoint_name"] = endpoint_name
                 result.append(batch_dict)
             return result
+
+    def set_archived(self, batch_id: int, user_id: int, archived: bool) -> dict:
+        with self.SessionLocal() as session:
+            query = session.query(Batch).filter_by(id=batch_id)
+            batch = Batch.accessible_by(query, user_id).first()
+            if not batch:
+                raise ValueError(f"Batch id '{batch_id}' not found.")
+            batch.archived_at = func.now() if archived else None
+            session.commit()
+            session.refresh(batch)
+            return batch.to_dict()
 
     def update_provider_batch_submitted(self, batch_id: int, provider_batch_id: str):
         with self.SessionLocal() as session:

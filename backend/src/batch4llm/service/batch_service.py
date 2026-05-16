@@ -135,9 +135,12 @@ class BatchService:
     def get_batch_log(self, batch_id: int, user_id: int, after_id: int = None) -> dict:
         return self.db.batches.get_batch_log(batch_id, user_id, after_id)
 
-    def list_batches(self, user_id: int) -> dict:
-        result = self.db.batches.list(user_id)
+    def list_batches(self, user_id: int, archived: bool | None = None) -> dict:
+        result = self.db.batches.list(user_id, archived)
         return result
+
+    def set_batch_archived(self, batch_id: int, user_id: int, archived: bool) -> dict:
+        return self.db.batches.set_archived(batch_id, user_id, archived)
 
     def list_engines(self) -> dict:
         result = self.client_manager.get_engines()

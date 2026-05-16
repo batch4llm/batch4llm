@@ -1,0 +1,22 @@
+info:
+  name: archive_file
+  type: http
+  seq: 5
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/files/:id/archive"
+  params:
+    - name: id
+      value: "{{file_id}}"
+      type: path
+    - name: archived
+      value: "true"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

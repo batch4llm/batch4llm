@@ -6,6 +6,10 @@ info:
 http:
   method: GET
   url: "{{baseUrl}}/api/prompts"
+  params:
+    - name: archived
+      value: ""
+      type: query
   auth: inherit
 
 runtime:

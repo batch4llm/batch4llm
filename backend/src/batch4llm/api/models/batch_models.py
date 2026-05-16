@@ -46,6 +46,7 @@ class BatchData(BaseModel):
     updated_at: datetime
     started_at: Optional[datetime]
     stopped_at: Optional[datetime]
+    archived_at: Optional[datetime] = None
 
 
 class BatchTaskData(BaseModel):

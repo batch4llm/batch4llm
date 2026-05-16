@@ -4,7 +4,7 @@ from sqlalchemy import ForeignKey, func, Enum, Integer, Float, Boolean, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from batch4llm.manager.database.base import Base
-from .user_group_mixin import UserGroupMixin
+from .resource_mixin import ResourceMixin
 
 if TYPE_CHECKING:
     from .batch_file import BatchFile
@@ -23,7 +23,7 @@ class BatchStatus(enum.Enum):
     FAILED = "FAILED"
 
 
-class Batch(Base, UserGroupMixin):
+class Batch(Base, ResourceMixin):
     __tablename__ = "batches"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -57,10 +57,6 @@ class Batch(Base, UserGroupMixin):
     max_retries: Mapped[int] = mapped_column(Integer, nullable=False)
     queue_batch: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
-    created_at: Mapped[datetime] = mapped_column(nullable=False, default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(
-        nullable=False, default=func.now(), onupdate=func.now()
-    )
     started_at: Mapped[datetime] = mapped_column(nullable=True)
     stopped_at: Mapped[datetime] = mapped_column(nullable=True)
 

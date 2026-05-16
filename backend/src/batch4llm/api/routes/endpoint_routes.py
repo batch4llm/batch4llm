@@ -37,8 +37,8 @@ def build_endpoint_router(
             }
 
     @router.get("/", response_model=list[EndpointResponse])
-    def list_endpoints(user=Security(jwt_authenticator)):
-        return endpoint_service.list(user["id"])
+    def list_endpoints(archived: bool | None = None, user=Security(jwt_authenticator)):
+        return endpoint_service.list(user["id"], archived)
 
     @router.get("/health/{endpoint_id}", response_model=bool)
     def get_endpoint_health(endpoint_id: int, user=Security(jwt_authenticator)):
@@ -47,6 +47,15 @@ def build_endpoint_router(
     @router.get("/models/{endpoint_id}", response_model=list[str])
     def get_endpoint_models(endpoint_id: int, user=Security(jwt_authenticator)):
         return endpoint_service.models(endpoint_id, user["id"])
+
+    @router.patch("/{endpoint_id}/archive", response_model=EndpointResponse)
+    def set_endpoint_archived(
+        endpoint_id: int, archived: bool = True, user=Security(jwt_authenticator)
+    ):
+        try:
+            return endpoint_service.set_archived(endpoint_id, user["id"], archived)
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
     @router.delete("/delete/{endpoint_id}", response_model=EndpointResponse)
     def delete_endpoint(endpoint_id: int, user=Security(jwt_authenticator)):

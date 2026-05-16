@@ -1,0 +1,22 @@
+info:
+  name: archive_batch
+  type: http
+  seq: 6
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/batches/:id/archive"
+  params:
+    - name: id
+      value: "{{batch_id}}"
+      type: path
+    - name: archived
+      value: "true"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

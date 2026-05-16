@@ -50,8 +50,11 @@ class EndpointService:
         endpoint = self.db.endpoints.get(endpoint_id, user_id, show_api=True)
         return self.endpoint_manager.get_models(endpoint)
 
-    def list(self, user_id: int) -> list[dict]:
-        return self.db.endpoints.list(user_id)
+    def list(self, user_id: int, archived: bool | None = None) -> list[dict]:
+        return self.db.endpoints.list(user_id, archived)
+
+    def set_archived(self, endpoint_id: int, user_id: int, archived: bool) -> dict:
+        return self.db.endpoints.set_archived(endpoint_id, user_id, archived)
 
     def delete(self, endpoint_id: int, user_id: int) -> dict:
         endpoint = self.db.endpoints.delete(endpoint_id, user_id)
