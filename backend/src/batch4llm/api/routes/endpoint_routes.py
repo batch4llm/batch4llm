@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Security
 
 from batch4llm.api.models.endpoint_models import EndpointRequest, EndpointResponse
-from batch4llm.core.exceptions import NameAlreadyExistsError
+from batch4llm.core.exceptions import NameAlreadyExistsError, ResourceInUseError
 from batch4llm.service.endpoint_service import EndpointService
 from batch4llm.service.jwt_authenticator import JWTAuthenticator
 
@@ -59,6 +59,11 @@ def build_endpoint_router(
 
     @router.delete("/delete/{endpoint_id}", response_model=EndpointResponse)
     def delete_endpoint(endpoint_id: int, user=Security(jwt_authenticator)):
-        return endpoint_service.delete(endpoint_id, user["id"])
+        try:
+            return endpoint_service.delete(endpoint_id, user["id"])
+        except ResourceInUseError as e:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
     return router

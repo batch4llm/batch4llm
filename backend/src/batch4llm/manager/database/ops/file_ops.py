@@ -1,5 +1,7 @@
 from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
+from batch4llm.core.exceptions import ResourceInUseError
+from batch4llm.manager.database.models.batch_file import BatchFile
 from batch4llm.manager.database.models.file import File
 from batch4llm.manager.database.ops.user_ops import get_group_id_subquery
 
@@ -77,6 +79,11 @@ class FileOps:
             file = File.accessible_by(query, user_id).first()
             if not file:
                 raise ValueError(f"File with ID '{file_id}' not found.")
+            in_use = session.query(BatchFile).filter_by(file_id=file_id).first()
+            if in_use:
+                raise ResourceInUseError(
+                    f"File '{file_id}' is still referenced by a batch and cannot be deleted."
+                )
             session.delete(file)
             session.commit()
             return file
