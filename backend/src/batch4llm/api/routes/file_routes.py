@@ -32,9 +32,11 @@ def build_file_router(file_service: FileService, jwt_authenticator: JWTAuthentic
             )
 
     @router.patch("/{file_id}/archive", response_model=FileData)
-    def archive_file(file_id: int, user=Security(jwt_authenticator)):
+    def set_file_archived(
+        file_id: int, archived: bool = True, user=Security(jwt_authenticator)
+    ):
         try:
-            return file_service.archive_file(file_id, user["id"])
+            return file_service.set_file_archived(file_id, user["id"], archived)
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 

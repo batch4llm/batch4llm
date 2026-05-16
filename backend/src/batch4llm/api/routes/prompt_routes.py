@@ -29,9 +29,11 @@ def build_prompt_router(
         return prompt_service.list(user["id"], archived)
 
     @router.patch("/{prompt_id}/archive", response_model=PromptData)
-    def archive_prompt(prompt_id: int, user=Security(jwt_authenticator)):
+    def set_prompt_archived(
+        prompt_id: int, archived: bool = True, user=Security(jwt_authenticator)
+    ):
         try:
-            return prompt_service.archive(prompt_id, user["id"])
+            return prompt_service.set_archived(prompt_id, user["id"], archived)
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 

@@ -53,8 +53,8 @@ class EndpointService:
     def list(self, user_id: int, archived: bool | None = None) -> list[dict]:
         return self.db.endpoints.list(user_id, archived)
 
-    def archive(self, endpoint_id: int, user_id: int) -> dict:
-        return self.db.endpoints.archive(endpoint_id, user_id)
+    def set_archived(self, endpoint_id: int, user_id: int, archived: bool) -> dict:
+        return self.db.endpoints.set_archived(endpoint_id, user_id, archived)
 
     def delete(self, endpoint_id: int, user_id: int) -> dict:
         endpoint = self.db.endpoints.delete(endpoint_id, user_id)

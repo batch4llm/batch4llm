@@ -139,8 +139,8 @@ class BatchService:
         result = self.db.batches.list(user_id, archived)
         return result
 
-    def archive_batch(self, batch_id: int, user_id: int) -> dict:
-        return self.db.batches.archive(batch_id, user_id)
+    def set_batch_archived(self, batch_id: int, user_id: int, archived: bool) -> dict:
+        return self.db.batches.set_archived(batch_id, user_id, archived)
 
     def list_engines(self) -> dict:
         result = self.client_manager.get_engines()

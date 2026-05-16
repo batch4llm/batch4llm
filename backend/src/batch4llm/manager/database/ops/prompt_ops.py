@@ -44,13 +44,13 @@ class PromptOps:
                 return prompt.to_dict()
             return None
 
-    def archive(self, prompt_id: int, user_id: int) -> dict:
+    def set_archived(self, prompt_id: int, user_id: int, archived: bool) -> dict:
         with self.SessionLocal() as session:
             query = session.query(Prompt).filter_by(id=prompt_id)
             prompt = Prompt.accessible_by(query, user_id).first()
             if not prompt:
                 raise ValueError(f"Prompt id '{prompt_id}' not found.")
-            prompt.archived_at = func.now()
+            prompt.archived_at = func.now() if archived else None
             session.commit()
             session.refresh(prompt)
             return prompt.to_dict()

@@ -49,9 +49,11 @@ def build_endpoint_router(
         return endpoint_service.models(endpoint_id, user["id"])
 
     @router.patch("/{endpoint_id}/archive", response_model=EndpointResponse)
-    def archive_endpoint(endpoint_id: int, user=Security(jwt_authenticator)):
+    def set_endpoint_archived(
+        endpoint_id: int, archived: bool = True, user=Security(jwt_authenticator)
+    ):
         try:
-            return endpoint_service.archive(endpoint_id, user["id"])
+            return endpoint_service.set_archived(endpoint_id, user["id"], archived)
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 

@@ -10,6 +10,9 @@ http:
     - name: id
       value: "{{endpoint_id}}"
       type: path
+    - name: archived
+      value: "true"
+      type: query
   auth: inherit
 
 settings:

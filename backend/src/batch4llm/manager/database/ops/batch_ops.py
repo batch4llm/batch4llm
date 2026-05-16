@@ -342,13 +342,13 @@ class BatchOps:
                 result.append(batch_dict)
             return result
 
-    def archive(self, batch_id: int, user_id: int) -> dict:
+    def set_archived(self, batch_id: int, user_id: int, archived: bool) -> dict:
         with self.SessionLocal() as session:
             query = session.query(Batch).filter_by(id=batch_id)
             batch = Batch.accessible_by(query, user_id).first()
             if not batch:
                 raise ValueError(f"Batch id '{batch_id}' not found.")
-            batch.archived_at = func.now()
+            batch.archived_at = func.now() if archived else None
             session.commit()
             session.refresh(batch)
             return batch.to_dict()
