@@ -7,6 +7,7 @@ from fastapi import UploadFile, File, Form
 from typing import Optional, List
 
 
+from batch4llm.core.exceptions import ResourceInUseError
 from batch4llm.service.jwt_authenticator import JWTAuthenticator
 
 
@@ -45,7 +46,9 @@ def build_file_router(file_service: FileService, jwt_authenticator: JWTAuthentic
         try:
             file_service.delete_file(file_id, user["id"])
             return Response(status_code=status.HTTP_204_NO_CONTENT)
-        except FileNotFoundError:
+        except ResourceInUseError as e:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+        except (FileNotFoundError, ValueError):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
             )

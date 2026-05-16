@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Security
 from starlette import status
 
 from batch4llm.api.models.prompt_models import PromptData, PromptRequest
-from batch4llm.core.exceptions import NameAlreadyExistsError
+from batch4llm.core.exceptions import NameAlreadyExistsError, ResourceInUseError
 from batch4llm.service.jwt_authenticator import JWTAuthenticator
 from batch4llm.service.prompt_service import PromptService
 
@@ -41,6 +41,8 @@ def build_prompt_router(
     def delete_prompt(prompt_id: int, user=Security(jwt_authenticator)):
         try:
             return prompt_service.delete(prompt_id=prompt_id, user_id=user["id"])
+        except ResourceInUseError as e:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
