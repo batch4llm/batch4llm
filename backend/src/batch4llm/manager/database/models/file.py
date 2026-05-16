@@ -2,10 +2,10 @@ from sqlalchemy import JSON, func
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 from batch4llm.manager.database.base import Base
-from .user_group_mixin import UserGroupMixin
+from .resource_mixin import ResourceMixin
 
 
-class File(Base, UserGroupMixin):
+class File(Base, ResourceMixin):
     __tablename__ = "files"
 
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -48,11 +48,11 @@ class FileOps:
                 raise ValueError(f"File with ID '{file_id}' not found.")
             return file
 
-    def list(self, user_id: int):
+    def list(self, user_id: int, archived: bool | None = None):
         with self.SessionLocal() as session:
-            query = session.query(File)
-            files = File.accessible_by(query, user_id).all()
-            return [f.to_dict() for f in files]
+            query = File.accessible_by(session.query(File), user_id)
+            query = File.filter_archived(query, archived)
+            return [f.to_dict() for f in query.all()]
 
     def system_list(self):
         with self.SessionLocal() as session:

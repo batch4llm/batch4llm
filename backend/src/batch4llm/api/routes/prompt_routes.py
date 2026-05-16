@@ -25,8 +25,8 @@ def build_prompt_router(
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
     @router.get("/", response_model=list[PromptData])
-    def list_prompts(user=Security(jwt_authenticator)):
-        return prompt_service.list(user["id"])
+    def list_prompts(archived: bool | None = None, user=Security(jwt_authenticator)):
+        return prompt_service.list(user["id"], archived)
 
     @router.delete("/delete/{prompt_id}")
     def delete_prompt(prompt_id: int, user=Security(jwt_authenticator)):

@@ -3,10 +3,10 @@ from sqlalchemy import func
 from datetime import datetime
 
 from batch4llm.manager.database.base import Base
-from .user_group_mixin import UserGroupMixin
+from .resource_mixin import ResourceMixin
 
 
-class Prompt(Base, UserGroupMixin):
+class Prompt(Base, ResourceMixin):
     __tablename__ = "prompts"
 
     id: Mapped[int] = mapped_column(primary_key=True)

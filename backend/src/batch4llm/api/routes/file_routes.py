@@ -42,8 +42,8 @@ def build_file_router(file_service: FileService, jwt_authenticator: JWTAuthentic
             )
 
     @router.get("/", response_model=list[FileData])
-    def list_files(user=Security(jwt_authenticator)):
-        return file_service.list_files(user["id"])
+    def list_files(archived: bool | None = None, user=Security(jwt_authenticator)):
+        return file_service.list_files(user["id"], archived)
 
     @router.get("/tags", response_model=list[str])
     def get_file_tags(user=Security(jwt_authenticator)):

@@ -9,3 +9,4 @@ class FileData(BaseModel):
     mime_type: str | None
     tags: list[str] | None = None
     created_at: datetime
+    archived_at: datetime | None = None

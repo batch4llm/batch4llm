@@ -42,10 +42,11 @@ class EndpointOps:
             else:
                 return ep.to_dict_public()
 
-    def list(self, user_id: int):
+    def list(self, user_id: int, archived: bool | None = None):
         with self.SessionLocal() as session:
-            endpoints = Endpoint.accessible_by(session.query(Endpoint), user_id).all()
-            return [e.to_dict_public() for e in endpoints]
+            query = Endpoint.accessible_by(session.query(Endpoint), user_id)
+            query = Endpoint.filter_archived(query, archived)
+            return [e.to_dict_public() for e in query.all()]
 
     def delete(self, endpoint_id: int, user_id: int):
         with self.SessionLocal() as session:

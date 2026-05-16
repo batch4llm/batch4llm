@@ -4,7 +4,7 @@ from sqlalchemy import ForeignKey, func, Enum, Integer, Float, Boolean, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from batch4llm.manager.database.base import Base
-from .user_group_mixin import UserGroupMixin
+from .resource_mixin import ResourceMixin
 
 if TYPE_CHECKING:
     from .batch_file import BatchFile
@@ -23,7 +23,7 @@ class BatchStatus(enum.Enum):
     FAILED = "FAILED"
 
 
-class Batch(Base, UserGroupMixin):
+class Batch(Base, ResourceMixin):
     __tablename__ = "batches"
 
     id: Mapped[int] = mapped_column(primary_key=True)

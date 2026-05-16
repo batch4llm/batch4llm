@@ -14,3 +14,4 @@ class PromptData(BaseModel):
     content: str
     multi_prompt: bool
     created_at: datetime
+    archived_at: datetime | None = None

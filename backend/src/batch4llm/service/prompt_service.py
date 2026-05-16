@@ -13,8 +13,8 @@ class PromptService:
             name=name, content=content, multi_prompt=multi_prompt, user_id=user_id
         )
 
-    def list(self, user_id: int) -> list[dict]:
-        return self.db.prompts.list(user_id)
+    def list(self, user_id: int, archived: bool | None = None) -> list[dict]:
+        return self.db.prompts.list(user_id, archived)
 
     def delete(self, prompt_id: int, user_id: int) -> dict:
         return self.db.prompts.delete(prompt_id=prompt_id, user_id=user_id)

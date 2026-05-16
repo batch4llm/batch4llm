@@ -29,11 +29,11 @@ class PromptOps:
                 session.rollback()
                 raise NameAlreadyExistsError(name)
 
-    def list(self, user_id: int) -> list[dict]:
+    def list(self, user_id: int, archived: bool | None = None) -> list[dict]:
         with self.SessionLocal() as session:
-            query = session.query(Prompt)
-            prompts = Prompt.accessible_by(query, user_id).all()
-            return [p.to_dict() for p in prompts]
+            query = Prompt.accessible_by(session.query(Prompt), user_id)
+            query = Prompt.filter_archived(query, archived)
+            return [p.to_dict() for p in query.all()]
 
     def get(self, prompt_id: int, user_id: int) -> dict | None:
         with self.SessionLocal() as session:

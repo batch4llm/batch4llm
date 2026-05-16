@@ -37,8 +37,8 @@ def build_endpoint_router(
             }
 
     @router.get("/", response_model=list[EndpointResponse])
-    def list_endpoints(user=Security(jwt_authenticator)):
-        return endpoint_service.list(user["id"])
+    def list_endpoints(archived: bool | None = None, user=Security(jwt_authenticator)):
+        return endpoint_service.list(user["id"], archived)
 
     @router.get("/health/{endpoint_id}", response_model=bool)
     def get_endpoint_health(endpoint_id: int, user=Security(jwt_authenticator)):

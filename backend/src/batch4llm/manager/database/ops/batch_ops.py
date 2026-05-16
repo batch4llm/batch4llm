@@ -313,11 +313,12 @@ class BatchOps:
                 for bl in query.order_by(asc(BatchLogEntry.created_at)).all()
             ]
 
-    def list(self, user_id: int):
+    def list(self, user_id: int, archived: bool | None = None):
         with self.SessionLocal() as session:
+            query = Batch.accessible_by(session.query(Batch), user_id)
+            query = Batch.filter_archived(query, archived)
             batches = (
-                Batch.accessible_by(session.query(Batch), user_id)
-                .outerjoin(Prompt, Batch.prompt_id == Prompt.id)
+                query.outerjoin(Prompt, Batch.prompt_id == Prompt.id)
                 .outerjoin(Endpoint, Batch.endpoint_id == Endpoint.id)
                 .add_columns(
                     Prompt.name.label("prompt_name"),
