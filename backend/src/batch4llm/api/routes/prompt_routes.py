@@ -28,6 +28,13 @@ def build_prompt_router(
     def list_prompts(archived: bool | None = None, user=Security(jwt_authenticator)):
         return prompt_service.list(user["id"], archived)
 
+    @router.patch("/{prompt_id}/archive", response_model=PromptData)
+    def archive_prompt(prompt_id: int, user=Security(jwt_authenticator)):
+        try:
+            return prompt_service.archive(prompt_id, user["id"])
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
     @router.delete("/delete/{prompt_id}")
     def delete_prompt(prompt_id: int, user=Security(jwt_authenticator)):
         try:

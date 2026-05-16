@@ -342,6 +342,17 @@ class BatchOps:
                 result.append(batch_dict)
             return result
 
+    def archive(self, batch_id: int, user_id: int) -> dict:
+        with self.SessionLocal() as session:
+            query = session.query(Batch).filter_by(id=batch_id)
+            batch = Batch.accessible_by(query, user_id).first()
+            if not batch:
+                raise ValueError(f"Batch id '{batch_id}' not found.")
+            batch.archived_at = func.now()
+            session.commit()
+            session.refresh(batch)
+            return batch.to_dict()
+
     def update_provider_batch_submitted(self, batch_id: int, provider_batch_id: str):
         with self.SessionLocal() as session:
             batch = session.query(Batch).filter_by(id=batch_id).first()

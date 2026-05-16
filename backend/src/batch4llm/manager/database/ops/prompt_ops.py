@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from batch4llm.core.exceptions import NameAlreadyExistsError
@@ -42,6 +43,17 @@ class PromptOps:
             if prompt:
                 return prompt.to_dict()
             return None
+
+    def archive(self, prompt_id: int, user_id: int) -> dict:
+        with self.SessionLocal() as session:
+            query = session.query(Prompt).filter_by(id=prompt_id)
+            prompt = Prompt.accessible_by(query, user_id).first()
+            if not prompt:
+                raise ValueError(f"Prompt id '{prompt_id}' not found.")
+            prompt.archived_at = func.now()
+            session.commit()
+            session.refresh(prompt)
+            return prompt.to_dict()
 
     def delete(self, prompt_id: int, user_id: int) -> dict:
         with self.SessionLocal() as session:

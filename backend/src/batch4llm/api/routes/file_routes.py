@@ -31,6 +31,13 @@ def build_file_router(file_service: FileService, jwt_authenticator: JWTAuthentic
                 status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
             )
 
+    @router.patch("/{file_id}/archive", response_model=FileData)
+    def archive_file(file_id: int, user=Security(jwt_authenticator)):
+        try:
+            return file_service.archive_file(file_id, user["id"])
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
     @router.delete("/delete/{file_id}")
     def delete_file(file_id: int, user=Security(jwt_authenticator)):
         try:

@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from batch4llm.core.exceptions import NameAlreadyExistsError
@@ -47,6 +48,17 @@ class EndpointOps:
             query = Endpoint.accessible_by(session.query(Endpoint), user_id)
             query = Endpoint.filter_archived(query, archived)
             return [e.to_dict_public() for e in query.all()]
+
+    def archive(self, endpoint_id: int, user_id: int) -> dict:
+        with self.SessionLocal() as session:
+            query = session.query(Endpoint).filter_by(id=endpoint_id)
+            ep = Endpoint.accessible_by(query, user_id).first()
+            if not ep:
+                raise ValueError(f"Endpoint ID '{endpoint_id}' not found.")
+            ep.archived_at = func.now()
+            session.commit()
+            session.refresh(ep)
+            return ep.to_dict_public()
 
     def delete(self, endpoint_id: int, user_id: int):
         with self.SessionLocal() as session:

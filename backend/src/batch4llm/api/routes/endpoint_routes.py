@@ -48,6 +48,13 @@ def build_endpoint_router(
     def get_endpoint_models(endpoint_id: int, user=Security(jwt_authenticator)):
         return endpoint_service.models(endpoint_id, user["id"])
 
+    @router.patch("/{endpoint_id}/archive", response_model=EndpointResponse)
+    def archive_endpoint(endpoint_id: int, user=Security(jwt_authenticator)):
+        try:
+            return endpoint_service.archive(endpoint_id, user["id"])
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
     @router.delete("/delete/{endpoint_id}", response_model=EndpointResponse)
     def delete_endpoint(endpoint_id: int, user=Security(jwt_authenticator)):
         return endpoint_service.delete(endpoint_id, user["id"])

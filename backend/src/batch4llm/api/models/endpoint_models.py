@@ -19,4 +19,5 @@ class EndpointResponse(BaseModel):
     url: Optional[str]
     token: Optional[str]
     created_at: datetime
+    updated_at: datetime
     archived_at: Optional[datetime] = None

@@ -16,5 +16,8 @@ class PromptService:
     def list(self, user_id: int, archived: bool | None = None) -> list[dict]:
         return self.db.prompts.list(user_id, archived)
 
+    def archive(self, prompt_id: int, user_id: int) -> dict:
+        return self.db.prompts.archive(prompt_id, user_id)
+
     def delete(self, prompt_id: int, user_id: int) -> dict:
         return self.db.prompts.delete(prompt_id=prompt_id, user_id=user_id)

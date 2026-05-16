@@ -57,10 +57,6 @@ class Batch(Base, ResourceMixin):
     max_retries: Mapped[int] = mapped_column(Integer, nullable=False)
     queue_batch: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
-    created_at: Mapped[datetime] = mapped_column(nullable=False, default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(
-        nullable=False, default=func.now(), onupdate=func.now()
-    )
     started_at: Mapped[datetime] = mapped_column(nullable=True)
     stopped_at: Mapped[datetime] = mapped_column(nullable=True)
 

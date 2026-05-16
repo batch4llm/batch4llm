@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
 from batch4llm.manager.database.models.file import File
 from batch4llm.manager.database.ops.user_ops import get_group_id_subquery
@@ -58,6 +59,17 @@ class FileOps:
         with self.SessionLocal() as session:
             files = session.query(File).all()
             return [f.to_dict() for f in files]
+
+    def archive(self, file_id: int, user_id: int) -> dict:
+        with self.SessionLocal() as session:
+            query = session.query(File).filter_by(id=file_id)
+            file = File.accessible_by(query, user_id).first()
+            if not file:
+                raise ValueError(f"File with ID '{file_id}' not found.")
+            file.archived_at = func.now()
+            session.commit()
+            session.refresh(file)
+            return file.to_dict()
 
     def delete(self, file_id: int, user_id: int) -> File:
         with self.SessionLocal() as session:

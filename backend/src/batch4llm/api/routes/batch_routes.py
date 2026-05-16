@@ -54,4 +54,11 @@ def build_batch_router(
     def list_runs(archived: bool | None = None, user=Security(jwt_authenticator)):
         return batch_service.list_batches(user["id"], archived)
 
+    @router.patch("/{batch_id}/archive", response_model=BatchData)
+    def archive_batch(batch_id: int, user=Security(jwt_authenticator)):
+        try:
+            return batch_service.archive_batch(batch_id, user["id"])
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
     return router
