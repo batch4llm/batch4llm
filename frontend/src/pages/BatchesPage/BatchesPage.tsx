@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { BatchesAPI } from "../../api/batches.ts";
-import { ExportAPI } from "../../api/export.ts";
 import { type Batch, type BatchStatus, ACTIVE_STATUSES } from "../../types/Batch.ts";
 import { type BatchFile } from "../../types/BatchFile.ts";
 import { PageHeader } from "../../components/PageHeader/PageHeader.tsx";
@@ -10,6 +9,7 @@ import { BatchTimer } from "../../components/BatchTimer/BatchTimer.tsx";
 import { BatchDetailModal } from "../../components/BatchDetailModal/BatchDetailModal.tsx";
 import { EndpointModal } from "../../components/EndpointModal/EndpointModal.tsx";
 import { PromptModal } from "../../components/PromptModal/PromptModal.tsx";
+import { ExportModal } from "../../components/ExportModal/ExportModal.tsx";
 import styles from "./BatchesPage.module.css";
 
 type Tab = "batches" | "archived";
@@ -187,6 +187,7 @@ export default function BatchesPage() {
     const [detailBatchId, setDetailBatchId] = useState<number | null>(null);
     const [endpointBatchId, setEndpointBatchId] = useState<number | null>(null);
     const [promptBatchId, setPromptBatchId] = useState<number | null>(null);
+    const [exportBatchId, setExportBatchId] = useState<number | null>(null);
 
     // ── Load all batches ──────────────────────────────────────────────────────
     useEffect(() => {
@@ -251,19 +252,8 @@ export default function BatchesPage() {
         ).catch(err => { alert(err); console.error(err); });
     }
 
-    async function handleExport(batch: Batch) {
-        try {
-            const res = await ExportAPI.exportBatches("raw_csv", [batch.id]);
-            const url = URL.createObjectURL(res.data);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `batch-${batch.id}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-        } catch (err) {
-            alert(err);
-            console.error(err);
-        }
+    function handleExport(batch: Batch) {
+        setExportBatchId(batch.id);
     }
 
     const cardHandlers = {
@@ -280,6 +270,7 @@ export default function BatchesPage() {
     const detailBatch   = batches.find(b => b.id === detailBatchId)   ?? null;
     const endpointBatch = batches.find(b => b.id === endpointBatchId) ?? null;
     const promptBatch   = batches.find(b => b.id === promptBatchId)   ?? null;
+    const exportBatch   = batches.find(b => b.id === exportBatchId)   ?? null;
 
     const totallyEmpty = filtered.active.length === 0 && filtered.history.length === 0;
 
@@ -405,6 +396,14 @@ export default function BatchesPage() {
                 <PromptModal
                     isOpen={!!promptBatchId}
                     onClose={() => setPromptBatchId(null)}
+                />
+            )}
+
+            {exportBatch && (
+                <ExportModal
+                    isOpen={!!exportBatchId}
+                    onClose={() => setExportBatchId(null)}
+                    batch={exportBatch}
                 />
             )}
         </section>

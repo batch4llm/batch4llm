@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { UserAPI, User, Group } from "../../api/user";
+import { UserAPI } from "../../api/user";
+import type { User, Group } from "../../api/user";
 import { LoginAPI } from "../../api/login";
 import styles from "./AccountPage.module.css";
 
