@@ -1,6 +1,18 @@
-export type BatchStatus = "SCHEDULED" | "QUEUED" | "RUNNING" | "DONE" | "ERROR";
+export type BatchStatus =
+    | "SCHEDULED"
+    | "QUEUED"
+    | "RUNNING"
+    | "PROVIDER_BATCH_PENDING"
+    | "COMPLETED"
+    | "STOPPED"
+    | "FAILED";
 
-export const ACTIVE_STATUSES: BatchStatus[] = ["SCHEDULED", "QUEUED", "RUNNING"];
+export const ACTIVE_STATUSES: BatchStatus[] = [
+    "SCHEDULED",
+    "QUEUED",
+    "RUNNING",
+    "PROVIDER_BATCH_PENDING",
+];
 
 export interface Batch {
     id: number;
@@ -22,6 +34,7 @@ export interface Batch {
     updated_at: string;
     started_at?: string;
     stopped_at?: string;
+    archived_at?: string;
     batch_worker_settings: BatchWorkerSettings;
 }
 

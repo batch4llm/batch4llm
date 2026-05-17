@@ -1,196 +1,414 @@
+/* BatchesPage.module.css — V2 redesign (left color bar cards) */
+
+/* ─── Local tokens not yet in global index.css ────────────────────────────── */
 .page {
-    padding: 1.5rem 2rem;
-    max-width: 860px;
-    margin: 0 auto;
+    --s-running-color:   #1e88e5;
+    --s-queued-color:    #757575;
+    --s-pending-color:   #7c3aed;
+    --s-completed-color: #43a047;
+    --s-failed-color:    #e53935;
+
+    --font-mono:   ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --focus-ring:  rgba(37, 99, 235, 0.10);
+    --shadow-hover: 0 3px 10px rgba(0, 0, 0, 0.07);
+    --shadow-cta:   0 2px 8px rgba(30, 30, 47, 0.25);
+    --transition-fast: 0.12s ease;
+    --press-scale: 0.97;
+    --radius-pill: 999px;
 }
 
-/* ── Card list ────────────────────────────────────────────────────────────── */
-.batchList {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-}
+/* ─── Page wrapper ────────────────────────────────────────────────────────── */
+/* No extra padding — Layout.module.css already provides padding: 32px 40px 64px */
 
-.batchCard {
-    background: var(--color-card-bg);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 0.85rem 1rem;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    user-select: none;
-}
-
-.batchCard:hover {
-    border-color: var(--color-hover);
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
-}
-
-.batchCard:focus-visible {
-    outline: 2px solid var(--color-selectable);
-    outline-offset: 2px;
-}
-
-/* ── Top row ──────────────────────────────────────────────────────────────── */
-.cardTop {
+/* ─── Toolbar: tabs + search + button ────────────────────────────────────── */
+.toolbar {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 12px;
+    margin-bottom: 22px;
     flex-wrap: wrap;
 }
 
-.batchId {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: #888;
-    letter-spacing: 0.04em;
-    min-width: 2.5rem;
+.tabs {
+    display: inline-flex;
+    background: var(--color-card-bg);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 3px;
+    gap: 2px;
 }
 
-.model {
-    font-size: 0.75rem;
-    color: #888;
-    margin-left: auto;
-    white-space: nowrap;
-}
-
-/* ── Clickable chips (endpoint / prompt) ──────────────────────────────────── */
-.chip {
+.tab {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    padding: 0.2rem 0.5rem;
-    cursor: pointer;
-    transition: border-color 0.12s ease, background 0.12s ease;
-    white-space: nowrap;
-    max-width: 200px;
-    /* override global button styles */
-    font-family: var(--font-base);
-    color: var(--color-text);
-    margin: 0;
+    gap: 6px;
+    transition: background var(--transition-fast), color var(--transition-fast);
     box-shadow: none;
-    font-size: inherit;
+    margin: 0;
+}
+.tab:hover:not(.tabActive) { background: #e2e2e2; color: var(--color-text); }
+.tabActive {
+    background: var(--color-navy-900);
+    color: #fff;
 }
 
-.chip:hover {
-    border-color: var(--color-selectable);
-    background: #e8f3fc;
+.tabCount {
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg);
+    color: var(--text-muted);
+}
+.tabActive .tabCount {
+    background: rgba(255, 255, 255, 0.18);
+    color: inherit;
 }
 
-.chipLabel {
-    font-size: 0.63rem;
-    font-weight: 700;
-    color: #aaa;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
-
-.chipValue {
-    font-size: 0.74rem;
-    color: var(--color-text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 130px;
-}
-
-/* ── Mid row ──────────────────────────────────────────────────────────────── */
-.cardMid {
+.search {
+    flex: 0 0 280px;
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 1.5rem;
-    flex-wrap: wrap;
+}
+.search svg {
+    position: absolute;
+    left: 10px;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+.search input {
+    width: 100%;
+    height: 34px;
+    padding: 0 10px 0 32px;
+    font-family: inherit;
+    font-size: 13px;
+    background: var(--color-card-bg);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    outline: none;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.search input:focus {
+    border-color: var(--color-selectable);
+    box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
-.progressWrap,
-.timerWrap,
-.costsWrap {
+/* ─── Section header ──────────────────────────────────────────────────────── */
+.sectionHead {
     display: flex;
     align-items: baseline;
-    gap: 0.35rem;
+    gap: 8px;
+    margin: 6px 0 10px;
+}
+.sectionHead + .sectionHead,
+.list + .sectionHead {
+    margin-top: 26px;
 }
 
-.progressLabel {
-    font-size: 0.68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #aaa;
-}
-
-.progressValue {
-    font-size: 0.82rem;
-    font-weight: 500;
+.sectionTitle {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    margin: 0;
     color: var(--color-text);
 }
+.countPill {
+    font-size: 11.5px;
+    background: var(--color-bg);
+    color: var(--text-muted);
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    font-weight: 500;
+}
+.sectionHint {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.rule {
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+    margin-left: 6px;
+}
 
-/* ── Action row ───────────────────────────────────────────────────────────── */
-.cardActions {
+/* ─── Card list ───────────────────────────────────────────────────────────── */
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ─── Batch card (V2 — left color bar) ───────────────────────────────────── */
+.card {
+    position: relative;
+    background: var(--color-card-bg);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: 14px 16px 14px 22px;
+    cursor: pointer;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+    user-select: none;
+}
+.card:hover {
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-1px);
+}
+.card:focus { outline: none; }
+.card:focus-visible {
+    border-color: var(--color-selectable);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.isArchived { opacity: 0.72; }
+
+/* Left status stripe via ::before */
+.card::before {
+    content: "";
+    position: absolute;
+    left: -1.5px; top: -1.5px; bottom: -1.5px;
+    width: 6px;
+    background: var(--s-color, var(--color-border));
+    border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+}
+
+/* Status color variables per status class */
+.statusRunning   { --s-color: var(--s-running-color);   --s-bg: #e7f2fc; --s-fg: #0b66ac; }
+.statusQueued    { --s-color: var(--s-queued-color);    --s-bg: #ececec; --s-fg: #555;    }
+.statusStopped   { --s-color: var(--s-queued-color);    --s-bg: #ececec; --s-fg: #555;    }
+.statusPending   { --s-color: var(--s-pending-color);   --s-bg: #ede9fe; --s-fg: #5b21b6; }
+.statusCompleted { --s-color: var(--s-completed-color); --s-bg: #e6f4ea; --s-fg: #1e6b2c; }
+.statusFailed    { --s-color: var(--s-failed-color);    --s-bg: #fdecec; --s-fg: #a82626; }
+
+/* ─── Card top row ────────────────────────────────────────────────────────── */
+.cardTop {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+.name {
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text);
+}
+.statusWord {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: lowercase;
+    color: var(--s-fg);
+    letter-spacing: 0.2px;
+    flex: none;
+}
+
+/* ─── Sub-meta row ────────────────────────────────────────────────────────── */
+.sub {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.sep { color: #bbb; }
+.batchId {
+    font-family: var(--font-mono);
+    color: var(--color-navy-700);
+    font-size: 11.5px;
+}
+.metaLink {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+.metaLink:hover { color: var(--color-click); }
+
+/* ─── Stats row ───────────────────────────────────────────────────────────── */
+.stats {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding-top: 0.4rem;
-    border-top: 1px solid var(--color-border);
-    gap: 0.5rem;
+    gap: 18px;
+    margin-top: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
 }
-
-.cardActionsLeft {
+.stat {
     display: flex;
-    gap: 0.4rem;
+    align-items: baseline;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--color-text);
+    white-space: nowrap;
+}
+.statKey {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+.statMono {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+}
+.statMuted {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-left: 2px;
 }
 
-/* ── Small icon buttons ───────────────────────────────────────────────────── */
-.iconBtn {
+/* Pulsing dot for live running timer */
+.liveTimer::after {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-left: 6px;
+    border-radius: 50%;
+    background: var(--s-running-color);
+    animation: pulse 1.4s ease-in-out infinite;
+    vertical-align: middle;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 0.35; transform: scale(0.85); }
+    50%       { opacity: 1;    transform: scale(1.15); }
+}
+
+/* ─── Progress bar ────────────────────────────────────────────────────────── */
+.bar {
+    position: relative;
+    height: 4px;
+    background: var(--color-bg);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+}
+.bar > span {
+    display: block;
+    height: 100%;
+    background: var(--s-color, var(--s-running-color));
+    border-radius: inherit;
+    transition: width 0.3s ease;
+}
+
+/* Queued ── slow diagonal stripes, reads as "waiting" not "loading" */
+.barQueued {
+    background:
+        repeating-linear-gradient(
+            -45deg,
+            var(--s-bg) 0 8px,
+            var(--color-bg) 8px 16px
+        );
+    background-size: 22.6px 22.6px;
+    animation: stripes 6s linear infinite;
+}
+.barQueued > span { display: none; }
+
+/* Provider batch pending ── same stripe pattern but fully filled with purple */
+.barPending {
+    background:
+        repeating-linear-gradient(
+            -45deg,
+            #ede9fe 0 8px,
+            #c4b5fd 8px 16px
+        );
+    background-size: 22.6px 22.6px;
+    animation: stripes 6s linear infinite;
+}
+.barPending > span { display: none; }
+
+@keyframes stripes {
+    from { background-position: 0 0; }
+    to   { background-position: 22.6px 0; }
+}
+
+/* ─── Action buttons (hover-revealed) ────────────────────────────────────── */
+.actions {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%) translateX(4px);
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+.card:hover .actions,
+.card:focus-within .actions {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%);
+}
+
+.ic {
+    height: 30px;
+    min-width: 30px;
+    padding: 0 7px;
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    font-size: 0.72rem;
-    font-weight: 500;
-    padding: 0.28rem 0.6rem;
+    justify-content: center;
+    gap: 5px;
+    background: var(--color-card-bg);
+    border: 1.5px solid var(--color-border);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--color-border);
-    background: var(--color-bg);
     color: #555;
+    font-family: inherit;
+    font-size: 12px;
     cursor: pointer;
-    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
-    white-space: nowrap;
-    /* override global button styles */
-    font-family: var(--font-base);
+    transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast),
+        color var(--transition-fast),
+        transform var(--transition-fast);
     box-shadow: none;
     margin: 0;
 }
-
-.iconBtn:hover {
-    background: #e8f3fc;
+.ic svg { width: 14px; height: 14px; }
+.ic:hover {
+    background: var(--color-bg);
+    border-color: var(--border-hover);
+    color: var(--color-text);
+}
+.ic:active { transform: scale(var(--press-scale)); }
+.ic:focus-visible {
+    outline: none;
     border-color: var(--color-selectable);
-    color: var(--color-click);
+    box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
-.iconBtn:active {
-    transform: scale(0.97);
+.icStop:hover {
+    background: #fdecec;
+    border-color: var(--s-failed-color);
+    color: #a82626;
 }
 
-.stopBtn {
-    color: #c0392b;
-    border-color: #f5c6c2;
-    background: #fff5f5;
-    margin-left: auto;
-}
-
-.stopBtn:hover {
-    background: #fde8e8;
-    border-color: #e74c3c;
-    color: #c0392b;
-}
-
-/* ── Start button wrapper ─────────────────────────────────────────────────── */
-.startWrap {
+/* ─── Empty state ─────────────────────────────────────────────────────────── */
+.emptyState {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 36px 16px;
+    border: 1.5px dashed var(--border-light);
+    border-radius: var(--radius-xl);
     text-align: center;
-    margin-top: 1.25rem;
+    background: var(--color-bg);
 }
