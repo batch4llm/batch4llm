@@ -15,4 +15,6 @@ export const BatchesAPI = {
     getBatchFilesById: (id: number): Promise<BatchFile[]> => api.get(`/batches/files/${id}`).then(r => r.data),
     create: (payload: Partial<Batch>): Promise<Batch> => api.post("/batches/start", payload).then(r => r.data),
     stop: (id: number): Promise<Batch> => api.post(`/batches/stop/${id}`).then(r => r.data),
+    archive: (id: number, archived = true): Promise<Batch> =>
+        api.patch(`/batches/${id}/archive`, null, { params: { archived } }).then(r => r.data),
 };
