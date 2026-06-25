@@ -5,7 +5,7 @@ from batch4llm.config import ServiceSettings
 from batch4llm.manager.database import Database
 from batch4llm.manager.database.models.batch import BatchStatus, LogLevel
 from batch4llm.manager.database.models.batch_file import BatchFileStatus
-from batch4llm.manager.database.models.batch_task import BatchTaskStatus
+from batch4llm.manager.database.models.llm_request import LlmRequestStatus
 
 service_settings = ServiceSettings()
 logger = get_task_logger(__name__)
@@ -14,23 +14,6 @@ db = Database(service_settings.postgres_dsn)
 
 @app.task
 def dispatch_database_tasks():
-
-    task_with_open_retry = db.worker.get_failed_tasks_with_open_retry()
-    logger.debug(f"Fetched {len(task_with_open_retry)} task with open retry")
-    for task in task_with_open_retry:
-        db.batches.add_batch_task(
-            batch_id=task.batch_id,
-            file_id=task.file_id,
-            batch_file_id=task.batch_file_id,
-            prompt=task.prompt,
-            prompt_marker=task.prompt_marker,
-            retry_task_id=task.id,
-        )
-        db.batches.add_task_log(
-            batch_task_id=task.id,
-            message=f"Task {task.id} failed and will be retried.",
-            level=LogLevel.WARN,
-        )
 
     for batch_file in db.worker.get_running_batch_files_with_no_pending_task():
         db.batches.update_batch_file_status(batch_file.id, BatchFileStatus.COMPLETED)
@@ -77,38 +60,36 @@ def dispatch_database_tasks():
             # todo: set remaining batch files failed
             # todo: set remaining batch tasks failed
 
-        if db.worker.count_running_tasks_on_batch(batch.id) >= batch.max_parallel_tasks:
+        if (
+            db.worker.count_running_requests_on_batch(batch.id)
+            >= batch.max_parallel_tasks
+        ):
             continue
         if (
-            db.worker.count_started_in_last_minute_tasks_on_batch(batch.id)
+            db.worker.count_started_in_last_minute_requests_on_batch(batch.id)
             >= batch.max_tasks_per_minute
         ):
             continue
 
-        task = db.worker.get_queued_task_from_batch_id(batch.id)
-        if task:
+        request = db.worker.get_queued_llm_request_from_batch(batch.id)
+        if request:
             endpoint = db.worker.get_endpoint(batch.endpoint_id)
-            file_path = db.worker.get_file_path(task.file_id)
+            file_path = db.worker.get_file_path(request.batch_task.file_id)
             worker_task = process_single_file.delay(
                 batch_id=batch.id,
-                batch_task={
-                    "id": task.id,
-                    "file_id": task.file_id,
-                    "batch_file_id": task.batch_file_id,
-                    "path": file_path,
-                    "prompt": task.prompt,
-                    "marker": task.prompt_marker,
-                },
+                llm_request_id=request.id,
+                file_id=request.batch_task.file_id,
+                file_path=file_path,
+                prompt=request.prompt,
                 endpoint=endpoint,
                 file_reader=batch.file_reader,
                 model=batch.model,
-                prompt=task.prompt,
                 temperature=batch.temperature,
                 json_format=batch.json_format,
             )
-            db.batches.update_batch_task_status(
-                task.id, BatchTaskStatus.RUNNING, worker_task_id=worker_task.id
+            db.batches.update_llm_request_status(
+                request.id, LlmRequestStatus.RUNNING, worker_task_id=worker_task.id
             )
-            db.batches.update_batch_file_status(  # todo: set to queued when no tasks running
-                task.batch_file_id, BatchFileStatus.RUNNING
+            db.batches.update_batch_file_status(
+                request.batch_task.batch_file_id, BatchFileStatus.RUNNING
             )

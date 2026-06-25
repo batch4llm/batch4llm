@@ -3,7 +3,7 @@ from celery.utils.log import get_task_logger
 from batch4llm.config import ServiceSettings
 from batch4llm.manager.database import Database
 from batch4llm.manager.database.models.batch import LogLevel
-from batch4llm.manager.database.models.batch_task import BatchTaskStatus
+from batch4llm.manager.database.models.llm_request import LlmRequestStatus
 from batch4llm.manager.file_storage import MinIOStorage
 from batch4llm.manager.file_manager import FileManager
 from batch4llm.manager.llm_client.client_manager import ClientManager
@@ -18,11 +18,13 @@ db = Database(service_settings.postgres_dsn)
 def process_single_file(
     self,
     batch_id,
-    batch_task,
+    llm_request_id,
+    file_id,
+    file_path,
+    prompt,
     endpoint,
     file_reader,
     model,
-    prompt,
     temperature,
     json_format,
 ):
@@ -35,12 +37,16 @@ def process_single_file(
     file_manager = FileManager(file_storage, db)
     client_manager = ClientManager()
 
+    llm_request = db.worker.get_llm_request_by_id(llm_request_id)
+    batch_task_id = llm_request.batch_task_id if llm_request else None
+
     try:
-        db.batches.add_task_log(
-            batch_task["id"],
-            f"Processing file: {batch_task['file_id']} with endpoint {model} at {endpoint['name']}",
-        )
-        file = file_manager.download_intern(batch_task["file_id"])
+        if batch_task_id:
+            db.batches.add_task_log(
+                batch_task_id,
+                f"Processing file: {file_id} with endpoint {model} at {endpoint['name']}",
+            )
+        file = file_manager.download_intern(file_id)
         result = client_manager.process(
             endpoint=endpoint,
             file_reader=file_reader,
@@ -64,28 +70,34 @@ def process_single_file(
             except Exception as e:
                 logger.error(e)
 
-        db.batches.update_batch_task_status(
-            batch_task["id"],
-            status=BatchTaskStatus.COMPLETED,
+        db.batches.update_llm_request_status(
+            llm_request_id,
+            status=LlmRequestStatus.COMPLETED,
             engine_response=result,
             costs_in_usd=price,
         )
-        db.batches.add_task_log(
-            batch_task_id=batch_task["id"],
-            message=f"Successfully processed batch task: {batch_task['id']}",
-        )
-        return {"status": "success", "batch_task_id": batch_task["id"]}
+        if batch_task_id:
+            db.batches.add_task_log(
+                batch_task_id=batch_task_id,
+                message=f"Successfully processed llm request: {llm_request_id}",
+            )
+        return {"status": "success", "llm_request_id": llm_request_id}
 
     except Exception as e:
         logger.exception(e)
 
-        db.batches.update_batch_task_status(
-            batch_task_id=batch_task["id"],
-            status=BatchTaskStatus.FAILED,
+        db.batches.update_llm_request_status(
+            llm_request_id=llm_request_id,
+            status=LlmRequestStatus.FAILED,
         )
-        db.batches.add_task_log(
-            batch_task_id=batch_task["id"],
-            message=f"Error while processing file: {batch_task['file_id']}: {str(e)}",
-            level=LogLevel.ERROR,
-        )
-        return {"status": "failed", "batch_task_id": batch_task["id"], "error": str(e)}
+        if batch_task_id:
+            db.batches.add_task_log(
+                batch_task_id=batch_task_id,
+                message=f"Error while processing file: {file_id}: {str(e)}",
+                level=LogLevel.ERROR,
+            )
+        return {
+            "status": "failed",
+            "llm_request_id": llm_request_id,
+            "error": str(e),
+        }

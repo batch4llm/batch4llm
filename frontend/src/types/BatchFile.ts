@@ -6,8 +6,8 @@ export interface BatchFile {
     file_id: number;
     name: string;
     status: "QUEUED" | "RUNNING" | "FAILED" | "COMPLETED";
-    input_token_count: number;
-    output_token_count: number;
+    input_token_count?: number;
+    output_token_count?: number;
     costs_in_usd?: number;
     created_at: string;
     updated_at: string;
