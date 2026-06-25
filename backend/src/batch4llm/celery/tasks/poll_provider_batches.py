@@ -3,7 +3,7 @@ from celery.utils.log import get_task_logger
 from batch4llm.config import ServiceSettings
 from batch4llm.manager.database import Database
 from batch4llm.manager.database.models.batch import BatchStatus, LogLevel
-from batch4llm.manager.database.models.batch_task import BatchTaskStatus
+from batch4llm.manager.database.models.llm_request import LlmRequestStatus
 from batch4llm.manager.llm_client.client_manager import ClientManager
 from batch4llm.manager.llm_client.models.response_model import LLMClientResponse
 from batch4llm.manager.price_calculator import calculate_price
@@ -45,7 +45,7 @@ def poll_provider_batches():
 
             results = client.retrieve_batch_results(batch.provider_batch_id)
             for entry in results:
-                task_id = int(entry.custom_id)
+                llm_request_id = int(entry.custom_id)
                 if entry.success:
                     engine_response = LLMClientResponse(
                         client=endpoint["client"],
@@ -76,25 +76,27 @@ def poll_provider_batches():
                             )
                         except Exception as e:
                             logger.error(
-                                f"Price calculation failed for task {task_id}: {e}"
+                                f"Price calculation failed for request {llm_request_id}: {e}"
                             )
 
-                    db.batches.update_batch_task_status(
-                        task_id,
-                        status=BatchTaskStatus.COMPLETED,
+                    db.batches.update_llm_request_status(
+                        llm_request_id,
+                        status=LlmRequestStatus.COMPLETED,
                         engine_response=engine_response,
                         costs_in_usd=price,
                     )
                 else:
-                    db.batches.update_batch_task_status(
-                        task_id,
-                        status=BatchTaskStatus.FAILED,
+                    db.batches.update_llm_request_status(
+                        llm_request_id,
+                        status=LlmRequestStatus.FAILED,
                     )
-                    db.batches.add_task_log(
-                        batch_task_id=task_id,
-                        message=f"Provider batch task failed: {entry.error_message}",
-                        level=LogLevel.ERROR,
-                    )
+                    llm_request = db.worker.get_llm_request_by_id(llm_request_id)
+                    if llm_request:
+                        db.batches.add_task_log(
+                            batch_task_id=llm_request.batch_task_id,
+                            message=f"Provider batch request failed: {entry.error_message}",
+                            level=LogLevel.ERROR,
+                        )
 
             db.batches.update_status(batch.id, BatchStatus.COMPLETED)
             db.batches.add_batch_log(

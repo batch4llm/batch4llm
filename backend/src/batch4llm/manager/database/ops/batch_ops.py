@@ -3,6 +3,7 @@ from typing import List
 from sqlalchemy import func, asc
 from sqlalchemy.orm import sessionmaker, selectinload
 from batch4llm.manager.database.models.batch_task import BatchTask, BatchTaskStatus
+from batch4llm.manager.database.models.llm_request import LlmRequest, LlmRequestStatus
 from batch4llm.manager.database.models.endpoint import Endpoint
 from batch4llm.manager.database.models.prompt import Prompt
 from batch4llm.manager.llm_client.models.response_model import LLMClientResponse
@@ -94,7 +95,6 @@ class BatchOps:
         batch_file_id: int,
         prompt: str,
         prompt_marker: str,
-        retry_task_id: int = None,
     ):
         with self.SessionLocal() as session:
             batch = session.get(Batch, batch_id)
@@ -105,24 +105,24 @@ class BatchOps:
             if not session.get(BatchFile, batch_file_id):
                 raise ValueError(f"BatchFile id '{batch_file_id}' not found.")
 
-            root_task_id = None
-            if retry_task_id:
-                retry_task = session.get(BatchTask, retry_task_id)
-                root_task_id = retry_task.root_task_id or retry_task_id
-
             new_batch_task = BatchTask(
                 batch_id=batch_id,
                 batch_file_id=batch_file_id,
                 file_id=file_id,
                 status=BatchTaskStatus.QUEUED,
-                prompt=prompt,
                 prompt_marker=prompt_marker,
                 endpoint_id=batch.endpoint_id,
-                retry_of_batch_task_id=retry_task_id,
-                root_task_id=root_task_id,
             )
 
             session.add(new_batch_task)
+            session.flush()
+
+            initial_request = LlmRequest(
+                batch_task_id=new_batch_task.id,
+                prompt=prompt,
+                status=LlmRequestStatus.QUEUED,
+            )
+            session.add(initial_request)
             session.commit()
             return new_batch_task.to_dict()
 
@@ -164,29 +164,35 @@ class BatchOps:
             session.refresh(batch_file)
             return batch_file
 
-    def update_batch_task_status(
+    def update_llm_request_status(
         self,
-        batch_task_id: int,
-        status: BatchTaskStatus,
-        worker_task_id: int = None,
+        llm_request_id: int,
+        status: LlmRequestStatus,
+        worker_task_id: str = None,
         engine_response: LLMClientResponse = None,
         costs_in_usd: float = None,
     ):
         with self.SessionLocal() as session:
-            batch_task = session.query(BatchTask).filter_by(id=batch_task_id).first()
-            if not batch_task:
-                raise ValueError(f"Batch Task id '{batch_task_id}' not found.")
+            llm_request = session.get(LlmRequest, llm_request_id)
+            if not llm_request:
+                raise ValueError(f"LlmRequest id '{llm_request_id}' not found.")
 
-            batch_task.status = status
+            batch_task = session.get(BatchTask, llm_request.batch_task_id)
+            batch = session.get(Batch, batch_task.batch_id)
 
-            if status in BatchTask.RUNNING_STATUSES and not batch_task.started_at:
-                batch_task.started_at = func.now()
+            llm_request.status = status
 
-            if status in BatchTask.STOPPED_STATUSES and not batch_task.stopped_at:
-                batch_task.stopped_at = func.now()
+            if status in LlmRequest.RUNNING_STATUSES and not llm_request.started_at:
+                llm_request.started_at = func.now()
+                if batch_task.status == BatchTaskStatus.QUEUED:
+                    batch_task.status = BatchTaskStatus.RUNNING
+                    batch_task.started_at = func.now()
+
+            if status in LlmRequest.STOPPED_STATUSES and not llm_request.stopped_at:
+                llm_request.stopped_at = func.now()
 
             if worker_task_id:
-                batch_task.worker_task_id = worker_task_id
+                llm_request.worker_task_id = worker_task_id
 
             def _sanitize(value: str | None) -> str | None:
                 if isinstance(value, str):
@@ -194,28 +200,40 @@ class BatchOps:
                 return value
 
             if engine_response:
-                batch_task.input = _sanitize(engine_response.input)
-                batch_task.output = _sanitize(engine_response.output)
-                batch_task.input_token_count = engine_response.input_tokens
-                batch_task.output_token_count = engine_response.output_tokens
-                batch_task.seed = engine_response.seed
-                batch_task.batch_file.input_token_count += engine_response.input_tokens
-                batch_task.batch_file.output_token_count += (
-                    engine_response.output_tokens
-                )
+                llm_request.input = _sanitize(engine_response.input)
+                llm_request.output = _sanitize(engine_response.output)
+                llm_request.input_token_count = engine_response.input_tokens
+                llm_request.output_token_count = engine_response.output_tokens
+                llm_request.seed = engine_response.seed
 
-            if costs_in_usd and batch_task.costs_in_usd is None:
-                batch_task.costs_in_usd = costs_in_usd
-                batch_task.batch.costs_in_usd = (
-                    batch_task.batch.costs_in_usd or 0
-                ) + costs_in_usd
-                batch_task.batch_file.costs_in_usd = (
-                    batch_task.batch_file.costs_in_usd or 0
-                ) + costs_in_usd
+            if costs_in_usd:
+                llm_request.costs_in_usd = costs_in_usd
+                batch.costs_in_usd = (batch.costs_in_usd or 0) + costs_in_usd
+
+            if status == LlmRequestStatus.COMPLETED:
+                batch_task.status = BatchTaskStatus.COMPLETED
+                batch_task.stopped_at = func.now()
+
+            elif status == LlmRequestStatus.FAILED:
+                retry_count = (
+                    session.query(func.count(LlmRequest.id))
+                    .filter(LlmRequest.batch_task_id == batch_task.id)
+                    .scalar()
+                )
+                if retry_count <= batch.retries_per_failed_task:
+                    new_request = LlmRequest(
+                        batch_task_id=batch_task.id,
+                        prompt=llm_request.prompt,
+                        status=LlmRequestStatus.QUEUED,
+                    )
+                    session.add(new_request)
+                else:
+                    batch_task.status = BatchTaskStatus.FAILED
+                    batch_task.stopped_at = func.now()
 
             session.commit()
-            session.refresh(batch_task)
-            return batch_task
+            session.refresh(llm_request)
+            return llm_request
 
     def add_task_log(
         self, batch_task_id: int, message: str, level: LogLevel = LogLevel.INFO
@@ -283,7 +301,9 @@ class BatchOps:
             query = (
                 session.query(Batch)
                 .options(
-                    selectinload(Batch.batch_files).selectinload(BatchFile.batch_tasks)
+                    selectinload(Batch.batch_files)
+                    .selectinload(BatchFile.batch_tasks)
+                    .selectinload(BatchTask.llm_requests)
                 )
                 .filter_by(id=batch_id)
             )
@@ -366,14 +386,41 @@ class BatchOps:
 
     def fail_all_queued_tasks(self, batch_id: int):
         with self.SessionLocal() as session:
-            tasks = (
-                session.query(BatchTask)
-                .filter_by(batch_id=batch_id, status=BatchTaskStatus.QUEUED)
-                .all()
+            active_task_ids = (
+                session.query(BatchTask.id)
+                .filter(
+                    BatchTask.batch_id == batch_id,
+                    BatchTask.status.in_(
+                        [BatchTaskStatus.QUEUED, BatchTaskStatus.RUNNING]
+                    ),
+                )
+                .subquery()
             )
-            for task in tasks:
-                task.status = BatchTaskStatus.FAILED
-                task.stopped_at = func.now()
+
+            session.query(LlmRequest).filter(
+                LlmRequest.batch_task_id.in_(active_task_ids),
+                LlmRequest.status.in_(
+                    [LlmRequestStatus.QUEUED, LlmRequestStatus.RUNNING]
+                ),
+            ).update(
+                {
+                    LlmRequest.status: LlmRequestStatus.FAILED,
+                    LlmRequest.stopped_at: func.now(),
+                },
+                synchronize_session=False,
+            )
+
+            session.query(BatchTask).filter(
+                BatchTask.batch_id == batch_id,
+                BatchTask.status.in_([BatchTaskStatus.QUEUED, BatchTaskStatus.RUNNING]),
+            ).update(
+                {
+                    BatchTask.status: BatchTaskStatus.FAILED,
+                    BatchTask.stopped_at: func.now(),
+                },
+                synchronize_session=False,
+            )
+
             session.commit()
 
     def get_active_batches(self):

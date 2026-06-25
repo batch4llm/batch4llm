@@ -31,9 +31,10 @@ class ExportOps:
             query = (
                 session.query(Batch)
                 .options(
-                    selectinload(Batch.batch_files).selectinload(BatchFile.batch_tasks),
                     selectinload(Batch.batch_files).selectinload(BatchFile.file),
-                    selectinload(Batch.batch_tasks),
+                    selectinload(Batch.batch_tasks).selectinload(
+                        BatchTask.llm_requests
+                    ),
                 )
                 .filter_by(id=batch_id)
             )

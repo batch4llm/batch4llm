@@ -37,9 +37,9 @@ def submit_provider_batch(batch_id: int):
                 f"Provider '{endpoint['client']}' does not support the batch API."
             )
 
-        tasks = db.worker.get_queued_tasks_for_batch(batch_id)
-        if not tasks:
-            raise ValueError(f"No queued tasks found for batch {batch_id}.")
+        requests = db.worker.get_queued_llm_requests_for_batch(batch_id)
+        if not requests:
+            raise ValueError(f"No queued requests found for batch {batch_id}.")
 
         model_settings = ModelSettings(
             temperature=batch.temperature,
@@ -49,8 +49,8 @@ def submit_provider_batch(batch_id: int):
             max_output_tokens=batch.max_output_tokens,
         )
 
-        for task in tasks:
-            file = file_manager.download_intern(task.file_id)
+        for request in requests:
+            file = file_manager.download_intern(request.batch_task.file_id)
             if batch.file_reader == "upload":
                 include_file = file
                 content = None
@@ -59,9 +59,9 @@ def submit_provider_batch(batch_id: int):
                 content = FileReaderManager.read(batch.file_reader, file.data)
 
             client.add_to_batch(
-                custom_id=str(task.id),
+                custom_id=str(request.id),
                 model=batch.model,
-                prompt=task.prompt,
+                prompt=request.prompt,
                 file=include_file,
                 content=content,
                 model_settings=model_settings,

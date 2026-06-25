@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
 from sqlalchemy import func, and_, select
-from sqlalchemy.orm import sessionmaker, aliased
+from sqlalchemy.orm import sessionmaker, selectinload, aliased
 
 from batch4llm.manager.database.models.batch_file import BatchFile
 from batch4llm.manager.database.models.batch_task import BatchTask, BatchTaskStatus
+from batch4llm.manager.database.models.llm_request import LlmRequest, LlmRequestStatus
 from batch4llm.manager.database.models.batch import (
     Batch,
     BatchStatus,
@@ -34,39 +35,58 @@ class WorkerOps:
                 is not None
             )
 
-    def count_running_tasks_on_batch(self, batch_id: int):
+    def count_running_requests_on_batch(self, batch_id: int) -> int:
         with self.SessionLocal() as session:
             return (
-                session.query(func.count(BatchTask.id))
+                session.query(func.count(LlmRequest.id))
+                .join(BatchTask, LlmRequest.batch_task_id == BatchTask.id)
                 .filter(
                     BatchTask.batch_id == batch_id,
-                    BatchTask.status == BatchTaskStatus.RUNNING,
+                    LlmRequest.status == LlmRequestStatus.RUNNING,
                 )
                 .scalar()
             )
 
-    def count_started_in_last_minute_tasks_on_batch(self, batch_id: int):
+    def count_started_in_last_minute_requests_on_batch(self, batch_id: int) -> int:
         one_minute_ago = datetime.now() - timedelta(minutes=1)
         with self.SessionLocal() as session:
             return (
-                session.query(func.count(BatchTask.id))
+                session.query(func.count(LlmRequest.id))
+                .join(BatchTask, LlmRequest.batch_task_id == BatchTask.id)
                 .filter(
                     BatchTask.batch_id == batch_id,
                     and_(
-                        BatchTask.started_at is not None,
-                        BatchTask.started_at >= one_minute_ago,
+                        LlmRequest.started_at.isnot(None),
+                        LlmRequest.started_at >= one_minute_ago,
                     ),
                 )
                 .scalar()
             )
 
-    def get_queued_task_from_batch_id(self, batch_id: int) -> BatchTask | None:
+    def get_queued_llm_request_from_batch(self, batch_id: int) -> LlmRequest | None:
         with self.SessionLocal() as session:
+            DependentTask = aliased(BatchTask)
+
+            # Unsatisfied dependency: depends_on task exists but is not COMPLETED
+            dep_unsatisfied = (
+                select(DependentTask.id)
+                .where(
+                    DependentTask.id == BatchTask.depends_on_batch_task_id,
+                    DependentTask.status != BatchTaskStatus.COMPLETED,
+                )
+                .correlate(BatchTask)
+                .exists()
+            )
+
             return (
-                session.query(BatchTask)
+                session.query(LlmRequest)
+                .options(selectinload(LlmRequest.batch_task))
+                .join(BatchTask, LlmRequest.batch_task_id == BatchTask.id)
                 .filter(
                     BatchTask.batch_id == batch_id,
-                    BatchTask.status == BatchTaskStatus.QUEUED,
+                    LlmRequest.status == LlmRequestStatus.QUEUED,
+                    BatchTask.status.notin_(BatchTask.STOPPED_STATUSES),
+                    ~dep_unsatisfied,
                 )
                 .first()
             )
@@ -106,53 +126,13 @@ class WorkerOps:
                 .count()
             )
 
-    def get_failed_tasks_with_open_retry(self) -> list[BatchTask]:
-        with self.SessionLocal() as session:
-            RetryTask = aliased(BatchTask)
-
-            # count retries of root task
-            retry_count = (
-                select(func.count(RetryTask.id))
-                .where(RetryTask.retry_of_batch_task_id == BatchTask.id)
-                .correlate(BatchTask)
-                .scalar_subquery()
-            )
-
-            # does a retry already exists
-            open_retry_exists = (
-                select(RetryTask.id)
-                .where(
-                    RetryTask.retry_of_batch_task_id == BatchTask.id,
-                    RetryTask.status.in_(
-                        [
-                            BatchTaskStatus.QUEUED,
-                            BatchTaskStatus.RUNNING,
-                        ]
-                    ),
-                )
-                .correlate(BatchTask)
-                .exists()
-            )
-
-            stmt = (
-                select(BatchTask)
-                .join(BatchTask.batch)
-                .where(
-                    Batch.status == BatchStatus.RUNNING,
-                    BatchTask.status == BatchTaskStatus.FAILED,
-                    BatchTask.retry_of_batch_task_id.is_(None),
-                    retry_count < Batch.retries_per_failed_task,
-                    ~open_retry_exists,
-                )
-            )
-
-            return list(session.execute(stmt).scalars().all())
-
-    def get_running_batch_tasks(self) -> list[BatchTask]:
+    def get_running_llm_requests(self) -> list[LlmRequest]:
         with self.SessionLocal() as session:
             return list(
                 session.scalars(
-                    select(BatchTask).where(BatchTask.status == BatchTaskStatus.RUNNING)
+                    select(LlmRequest)
+                    .options(selectinload(LlmRequest.batch_task))
+                    .where(LlmRequest.status == LlmRequestStatus.RUNNING)
                 )
             )
 
@@ -178,11 +158,16 @@ class WorkerOps:
                 raise ValueError(f"Batch id '{batch_id}' not found.")
             return batch
 
-    def get_queued_tasks_for_batch(self, batch_id: int) -> list[BatchTask]:
+    def get_queued_llm_requests_for_batch(self, batch_id: int) -> list[LlmRequest]:
         with self.SessionLocal() as session:
             return (
-                session.query(BatchTask)
-                .filter_by(batch_id=batch_id, status=BatchTaskStatus.QUEUED)
+                session.query(LlmRequest)
+                .options(selectinload(LlmRequest.batch_task))
+                .join(BatchTask, LlmRequest.batch_task_id == BatchTask.id)
+                .filter(
+                    BatchTask.batch_id == batch_id,
+                    LlmRequest.status == LlmRequestStatus.QUEUED,
+                )
                 .all()
             )
 
@@ -196,3 +181,7 @@ class WorkerOps:
                 )
                 .all()
             )
+
+    def get_llm_request_by_id(self, llm_request_id: int) -> LlmRequest | None:
+        with self.SessionLocal() as session:
+            return session.get(LlmRequest, llm_request_id)

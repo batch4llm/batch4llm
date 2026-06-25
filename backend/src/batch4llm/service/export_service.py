@@ -17,22 +17,27 @@ class ExportService:
             long_format = []
 
             file_by_id = {f.id: f for f in batch_export.files}
-            for batch_tasks in batch_export.batch_tasks:
+            for task in batch_export.batch_tasks:
+                successful_request = next(
+                    (r for r in task.llm_requests if r.status.value == "COMPLETED"),
+                    None,
+                )
                 long_format.append(
                     {
                         "batch_id": batch_id,
-                        "batch_task_id": batch_tasks.id,
-                        "status": str(batch_tasks.status),
+                        "batch_task_id": task.id,
+                        "status": str(task.status),
                         "client": batch_export.endpoint.client,
                         "provider": batch_export.endpoint.provider,
                         "model": batch_export.batch.model,
                         "temperature": batch_export.batch.temperature,
-                        "file_name": file_by_id[batch_tasks.file_id].name,
-                        "prompt_marker": batch_tasks.prompt_marker,
-                        "output": batch_tasks.output,
+                        "file_name": file_by_id[task.file_id].name,
+                        "prompt_marker": task.prompt_marker,
+                        "output": (
+                            successful_request.output if successful_request else None
+                        ),
                     }
                 )
             results.extend(long_format)
-            pass
         exporter = BatchExporter(mode)
         return exporter.export(results)

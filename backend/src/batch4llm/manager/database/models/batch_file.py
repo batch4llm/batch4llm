@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, Enum, Integer, Float, func
+from sqlalchemy import ForeignKey, Enum, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from batch4llm.manager.database.base import Base
 from .file import File
@@ -32,10 +32,6 @@ class BatchFile(Base):
         default=BatchFileStatus.QUEUED,
     )
 
-    input_token_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    output_token_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    costs_in_usd: Mapped[float] = mapped_column(Float, nullable=True)
-
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         nullable=False, default=func.now(), onupdate=func.now()
@@ -64,5 +60,18 @@ class BatchFile(Base):
     def to_dict(self, include_batch_tasks: bool = False) -> dict:
         data = {c.key: getattr(self, c.key) for c in self.__mapper__.columns}
         if include_batch_tasks:
-            data["batch_tasks"] = [task.to_dict() for task in self.batch_tasks]
+            tasks_data = [
+                task.to_dict(include_llm_requests=True) for task in self.batch_tasks
+            ]
+            data["batch_tasks"] = tasks_data
+            # Aggregate costs/tokens from successful requests across all tasks
+            data["costs_in_usd"] = (
+                sum(t.get("costs_in_usd") or 0 for t in tasks_data) or None
+            )
+            data["input_token_count"] = sum(
+                t.get("input_token_count") or 0 for t in tasks_data
+            )
+            data["output_token_count"] = sum(
+                t.get("output_token_count") or 0 for t in tasks_data
+            )
         return data

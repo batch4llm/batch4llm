@@ -49,16 +49,32 @@ class BatchData(BaseModel):
     archived_at: Optional[datetime] = None
 
 
+class LlmRequestData(BaseModel):
+    id: int
+    batch_task_id: int
+    status: str
+    output: Optional[str] = None
+    input_token_count: Optional[int] = None
+    output_token_count: Optional[int] = None
+    costs_in_usd: Optional[float] = None
+    created_at: datetime
+    updated_at: datetime
+    started_at: Optional[datetime] = None
+    stopped_at: Optional[datetime] = None
+
+
 class BatchTaskData(BaseModel):
     id: int
     batch_id: int
     file_id: int
     status: str
-    prompt_marker: Optional[str]
-    output: Optional[str]
-    input_token_count: Optional[int]
-    output_token_count: Optional[int]
-    costs_in_usd: Optional[float]
+    prompt_marker: Optional[str] = None
+    depends_on_batch_task_id: Optional[int] = None
+    output: Optional[str] = None
+    input_token_count: Optional[int] = None
+    output_token_count: Optional[int] = None
+    costs_in_usd: Optional[float] = None
+    llm_requests: Optional[list[LlmRequestData]] = None
     created_at: datetime
     updated_at: datetime
 
@@ -69,9 +85,9 @@ class BatchFileData(BaseModel):
     file_id: int
     name: str
     status: str
-    input_token_count: Optional[int]
-    output_token_count: Optional[int]
-    costs_in_usd: Optional[float]
+    input_token_count: Optional[int] = None
+    output_token_count: Optional[int] = None
+    costs_in_usd: Optional[float] = None
     batch_tasks: list[BatchTaskData]
     created_at: datetime
     updated_at: datetime
