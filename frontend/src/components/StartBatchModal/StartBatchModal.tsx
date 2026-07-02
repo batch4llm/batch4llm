@@ -49,6 +49,7 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
     const [retriesPerFailedTask, setRetriesPerFailedTask] = useState<number>(2);
     const [maxRetries, setMaxRetries] = useState<number>(5);
     const [queueBatch, setQueueBatch] = useState<boolean>(true);
+    const [useProviderBatch, setUseProviderBatch] = useState<boolean>(false);
 
     // Advanced model settings
     const [advancedModelOpen, setAdvancedModelOpen] = useState(false);
@@ -137,6 +138,7 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
                 model: model,
                 temperature: temperature,
                 json_format: jsonFormat === "True",
+                use_provider_batch: useProviderBatch,
                 batch_worker_settings: {
                     max_tasks_per_minute: maxTasksPerMinute,
                     max_parallel_tasks: maxParallelTasks,
@@ -345,6 +347,15 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
                             >
                                 <option value="true">Yes</option>
                                 <option value="false">No</option>
+                            </select>
+
+                            <label>Provider Batch</label>
+                            <select
+                                value={useProviderBatch ? "true" : "false"}
+                                onChange={(e) => setUseProviderBatch(e.target.value === "true")}
+                            >
+                                <option value="false">No</option>
+                                <option value="true">Yes</option>
                             </select>
                         </div>
                     )}
