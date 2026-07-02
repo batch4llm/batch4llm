@@ -21,6 +21,7 @@ from batch4llm.service.price_service import PriceService
 from batch4llm.service.prompt_service import PromptService
 from batch4llm.logger_config import setup_logging
 from batch4llm.service.user_service import UserService
+from batch4llm.manager.price_calculator import prefetch_pricing
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -89,6 +90,7 @@ def create_app(required_user_auth=True) -> FastAPI:
         price_service = PriceService(db, file_service)
 
         file_manager.sync_storage_with_db()
+        prefetch_pricing()
 
         router = build_router(
             file_service,

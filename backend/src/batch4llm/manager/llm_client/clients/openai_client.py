@@ -87,6 +87,8 @@ class OpenAILLMClient(BaseLLMClient):
                     text=text_format,
                 )
                 result_text = response.output_text
+                input_tokens = response.usage.input_tokens
+                output_tokens = response.usage.output_tokens
             else:
                 response = self.client.chat.completions.create(  # type: ignore
                     model=model,
@@ -99,6 +101,8 @@ class OpenAILLMClient(BaseLLMClient):
                     response_format=response_format,
                 )
                 result_text = response.choices[0].message.content
+                input_tokens = response.usage.prompt_tokens
+                output_tokens = response.usage.completion_tokens
         except openai.RateLimitError as e:
             raise RateLimitError(e)
 
@@ -115,8 +119,8 @@ class OpenAILLMClient(BaseLLMClient):
             prompt=prompt,
             input=content or "[Uploaded File]",
             output=result_text,
-            input_tokens=0,
-            output_tokens=0,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
         )
 
     def supports_provider_batch(self) -> bool:
