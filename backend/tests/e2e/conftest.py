@@ -23,13 +23,48 @@ def wait_for_backend(retries=30, delay=1):
     raise RuntimeError("Backend not ready")
 
 
+def wait_for_worker(retries=30, delay=2):
+    """Waits for the Celery worker to be online and accepting tasks."""
+    for _ in range(retries):
+        result = subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-f",
+                "compose.yaml",
+                "-f",
+                "compose.dev.yaml",
+                "exec",
+                "-T",
+                "worker",
+                "celery",
+                "-A",
+                "batch4llm.celery.worker",
+                "inspect",
+                "ping",
+                "--timeout",
+                "2",
+            ],
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return
+        time.sleep(delay)
+    raise RuntimeError("Celery worker not ready")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def ensure_backend_ready():
     wait_for_backend()
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_test_user(ensure_backend_ready):
+def ensure_worker_ready(ensure_backend_ready):
+    wait_for_worker()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_user(ensure_worker_ready):
     subprocess.run(
         [
             "docker",
