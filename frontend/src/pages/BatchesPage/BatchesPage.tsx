@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { BatchesAPI } from "../../api/batches.ts";
 import { type Batch, type BatchStatus, ACTIVE_STATUSES } from "../../types/Batch.ts";
-import { type BatchFile } from "../../types/BatchFile.ts";
 import { PageHeader } from "../../components/PageHeader/PageHeader.tsx";
 import { StartBatchModal } from "../../components/StartBatchModal/StartBatchModal.tsx";
 import { BatchLogModal } from "../../components/BatchLogModal/BatchLogModal.tsx";
@@ -178,7 +177,6 @@ function SectionHead({ title, hint, count }: { title: string; hint?: string; cou
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function BatchesPage() {
     const [batches, setBatches] = useState<Batch[]>([]);
-    const [batchFiles, setBatchFiles] = useState<Record<number, BatchFile[]>>({});
     const [tab, setTab] = useState<Tab>("batches");
     const [query, setQuery] = useState("");
 
@@ -202,19 +200,6 @@ export default function BatchesPage() {
         return () => clearInterval(id);
     }, [batches]);
 
-    // ── Auto-refresh files for open detail modal ──────────────────────────────
-    useEffect(() => {
-        if (!detailBatchId) return;
-        const batch = batches.find(b => b.id === detailBatchId);
-        if (!batch || !ACTIVE_STATUSES.includes(batch.status)) return;
-        const id = setInterval(() => {
-            BatchesAPI.getBatchFilesById(detailBatchId).then(files =>
-                setBatchFiles(prev => ({ ...prev, [detailBatchId]: files }))
-            );
-        }, 5000);
-        return () => clearInterval(id);
-    }, [batches, detailBatchId]);
-
     // ── Derived counts & filtered lists ──────────────────────────────────────
     const counts = useMemo(() => ({
         batches:  batches.filter(b => !b.archived_at).length,
@@ -234,11 +219,6 @@ export default function BatchesPage() {
 
     // ── Actions ───────────────────────────────────────────────────────────────
     function openDetail(batch: Batch) {
-        if (!batchFiles[batch.id]) {
-            BatchesAPI.getBatchFilesById(batch.id).then(files =>
-                setBatchFiles(prev => ({ ...prev, [batch.id]: files }))
-            );
-        }
         setDetailBatchId(batch.id);
     }
 
@@ -379,9 +359,10 @@ export default function BatchesPage() {
 
             {detailBatch && (
                 <BatchDetailModal
+                    key={detailBatch.id}
                     isOpen={!!detailBatchId}
                     onClose={() => setDetailBatchId(null)}
-                    files={batchFiles[detailBatch.id] ?? []}
+                    batch={detailBatch}
                 />
             )}
 

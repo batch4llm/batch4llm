@@ -73,29 +73,72 @@ class BatchTask(Base):
         BatchTaskStatus.FAILED,
     ]
 
+    # ── Derived task-level values ────────────────────────────────────────
+    # A task owns one or more LlmRequests (one per attempt/retry). These
+    # properties expose the task's effective result/prompt without callers
+    # having to re-implement the "which attempt wins" rules. They read the
+    # already-loaded `llm_requests` collection and return safe defaults when
+    # it has not been eager-loaded, so they never trigger a lazy DB fetch.
+
+    @property
+    def _loaded_requests(self) -> list["LlmRequest"]:
+        return self.__dict__.get("llm_requests") or []
+
+    @property
+    def _sorted_requests(self) -> list["LlmRequest"]:
+        return sorted(self._loaded_requests, key=lambda r: r.created_at)
+
+    @property
+    def _successful_request(self) -> "LlmRequest | None":
+        return next(
+            (r for r in self._sorted_requests if r.status.value == "COMPLETED"), None
+        )
+
+    @property
+    def retry_count(self) -> int:
+        return max(0, len(self._loaded_requests) - 1)
+
+    @property
+    def output(self) -> str | None:
+        req = self._successful_request
+        return req.output if req else None
+
+    @property
+    def input_token_count(self) -> int | None:
+        req = self._successful_request
+        return req.input_token_count if req else None
+
+    @property
+    def output_token_count(self) -> int | None:
+        req = self._successful_request
+        return req.output_token_count if req else None
+
+    @property
+    def costs_in_usd(self) -> float | None:
+        total = sum(r.costs_in_usd or 0.0 for r in self._loaded_requests)
+        return total or None
+
+    @property
+    def system_prompt(self) -> str | None:
+        # The system prompt is copied onto every attempt; the first is enough.
+        reqs = self._sorted_requests
+        return reqs[0].prompt if reqs else None
+
+    @property
+    def user_input(self) -> str | None:
+        # The rendered user input is captured once a request runs; prefer the
+        # successful attempt, fall back to any attempt that captured it.
+        req = self._successful_request or next(
+            (r for r in self._sorted_requests if r.input), None
+        )
+        return req.input if req else None
+
     def to_dict(self, include_llm_requests: bool = False) -> dict:
         data = {c.key: getattr(self, c.key) for c in self.__mapper__.columns}
-
-        # Compute output/tokens/costs from successful LlmRequest if relationship is loaded
-        loaded = self.__dict__.get("llm_requests")
-        if loaded is not None:
-            successful = next(
-                (r for r in loaded if r.status.value == "COMPLETED"), None
-            )
-            data["output"] = successful.output if successful else None
-            data["input_token_count"] = (
-                successful.input_token_count if successful else None
-            )
-            data["output_token_count"] = (
-                successful.output_token_count if successful else None
-            )
-            data["costs_in_usd"] = successful.costs_in_usd if successful else None
-            if include_llm_requests:
-                data["llm_requests"] = [r.to_dict() for r in loaded]
-        else:
-            data["output"] = None
-            data["input_token_count"] = None
-            data["output_token_count"] = None
-            data["costs_in_usd"] = None
-
+        data["output"] = self.output
+        data["input_token_count"] = self.input_token_count
+        data["output_token_count"] = self.output_token_count
+        data["costs_in_usd"] = self.costs_in_usd
+        if include_llm_requests and self.__dict__.get("llm_requests") is not None:
+            data["llm_requests"] = [r.to_dict() for r in self._loaded_requests]
         return data
