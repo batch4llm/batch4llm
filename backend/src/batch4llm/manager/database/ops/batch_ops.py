@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Tuple
 
 from sqlalchemy import func, asc
 from sqlalchemy.orm import sessionmaker, selectinload
@@ -16,6 +16,18 @@ from batch4llm.manager.database.models.batch import (
 )
 from batch4llm.manager.database.models.batch_file import BatchFile, BatchFileStatus
 from batch4llm.manager.database.models.file import File
+
+_PREVIEW_LENGTH = 500
+
+
+def _make_preview(
+    output: Optional[str], length: int = _PREVIEW_LENGTH
+) -> Tuple[Optional[str], bool]:
+    if output is None:
+        return None, False
+    if len(output) <= length:
+        return output, False
+    return output[:length], True
 
 
 class BatchOps:
@@ -296,24 +308,116 @@ class BatchOps:
                 raise ValueError(f"Batch id '{batch_id}' not found.")
             return batch.to_dict()
 
-    def get_files(self, batch_id: int, user_id: int) -> List[dict]:
+    def get_files_overview(self, batch_id: int, user_id: int) -> List[dict]:
         with self.SessionLocal() as session:
-            query = (
-                session.query(Batch)
-                .options(
-                    selectinload(Batch.batch_files)
-                    .selectinload(BatchFile.batch_tasks)
-                    .selectinload(BatchTask.llm_requests)
-                )
-                .filter_by(id=batch_id)
-            )
-
-            batch = Batch.accessible_by(query, user_id).first()
-
+            batch_query = session.query(Batch).filter_by(id=batch_id)
+            batch = Batch.accessible_by(batch_query, user_id).first()
             if not batch:
                 raise ValueError(f"Batch id '{batch_id}' not found.")
 
-            return [bl.to_dict(include_batch_tasks=True) for bl in batch.batch_files]
+            batch_files = (
+                session.query(BatchFile)
+                .options(selectinload(BatchFile.batch_tasks))
+                .filter_by(batch_id=batch_id)
+                .all()
+            )
+
+            result = []
+            for bf in batch_files:
+                tasks = bf.batch_tasks
+                result.append(
+                    {
+                        "id": bf.id,
+                        "batch_id": bf.batch_id,
+                        "file_id": bf.file_id,
+                        "name": bf.name,
+                        "status": bf.status.value,
+                        "task_count": len(tasks),
+                        "completed_task_count": sum(
+                            1 for t in tasks if t.status.value == "COMPLETED"
+                        ),
+                        "created_at": bf.created_at,
+                        "updated_at": bf.updated_at,
+                    }
+                )
+            return result
+
+    def get_file_with_tasks(self, file_id: int, user_id: int) -> dict:
+        with self.SessionLocal() as session:
+            query = (
+                session.query(BatchFile)
+                .options(
+                    selectinload(BatchFile.batch_tasks).selectinload(
+                        BatchTask.llm_requests
+                    )
+                )
+                .filter_by(id=file_id)
+            )
+            batch_file = query.first()
+            if not batch_file:
+                raise ValueError(f"BatchFile id '{file_id}' not found.")
+
+            batch_query = session.query(Batch).filter_by(id=batch_file.batch_id)
+            if not Batch.accessible_by(batch_query, user_id).first():
+                raise ValueError(f"BatchFile id '{file_id}' not found.")
+
+            tasks_data = []
+            for task in batch_file.batch_tasks:
+                preview, truncated = _make_preview(task.output)
+                tasks_data.append(
+                    {
+                        "id": task.id,
+                        "batch_file_id": task.batch_file_id,
+                        "status": task.status.value,
+                        "prompt_marker": task.prompt_marker,
+                        "depends_on_batch_task_id": task.depends_on_batch_task_id,
+                        "output_preview": preview,
+                        "output_truncated": truncated,
+                        "retry_count": task.retry_count,
+                        "input_token_count": task.input_token_count,
+                        "output_token_count": task.output_token_count,
+                        "costs_in_usd": task.costs_in_usd,
+                        "started_at": task.started_at,
+                        "stopped_at": task.stopped_at,
+                        "created_at": task.created_at,
+                        "updated_at": task.updated_at,
+                    }
+                )
+
+            tasks = batch_file.batch_tasks
+            return {
+                "id": batch_file.id,
+                "batch_id": batch_file.batch_id,
+                "file_id": batch_file.file_id,
+                "name": batch_file.name,
+                "status": batch_file.status.value,
+                "batch_tasks": tasks_data,
+                "costs_in_usd": sum(t.costs_in_usd or 0.0 for t in tasks),
+                "input_token_count": sum(t.input_token_count or 0 for t in tasks),
+                "output_token_count": sum(t.output_token_count or 0 for t in tasks),
+                "created_at": batch_file.created_at,
+                "updated_at": batch_file.updated_at,
+            }
+
+    def get_task_detail(self, task_id: int, user_id: int) -> BatchTask:
+        # Returns the ORM task with its attempts eager-loaded; the API layer
+        # shapes it via BatchTaskDetailData.model_validate and the frontend
+        # derives the result/cost/retry values from the attempts.
+        with self.SessionLocal() as session:
+            task = (
+                session.query(BatchTask)
+                .options(selectinload(BatchTask.llm_requests))
+                .filter_by(id=task_id)
+                .first()
+            )
+            if not task:
+                raise ValueError(f"BatchTask id '{task_id}' not found.")
+
+            batch_query = session.query(Batch).filter_by(id=task.batch_id)
+            if not Batch.accessible_by(batch_query, user_id).first():
+                raise ValueError(f"BatchTask id '{task_id}' not found.")
+
+            return task
 
     def get_batch_log(self, batch_id: int, user_id: int, after_id: int = None) -> list:
         with self.SessionLocal() as session:
