@@ -116,5 +116,5 @@ class GeminiLLMClient(BaseLLMClient):
             input=content or "[Uploaded File]",
             output=response.text,
             input_tokens=response.usage_metadata.prompt_token_count,
-            output_tokens=response.usage_metadata.total_token_count,
+            output_tokens=response.usage_metadata.candidates_token_count,
         )

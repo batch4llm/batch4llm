@@ -1,7 +1,21 @@
-import requests
 import tiktoken
 
 from batch4llm.manager.file_reader.reader_manager import FileReaderManager
+from batch4llm.manager.price_calculator.openrouter import OpenRouterPricingProvider
+from batch4llm.manager.price_calculator.pricing_provider import PricingProvider
+
+_pricing_provider: PricingProvider = OpenRouterPricingProvider()
+
+PROVIDER_BATCH_DISCOUNT = 0.5
+
+
+def set_pricing_provider(provider: PricingProvider) -> None:
+    global _pricing_provider
+    _pricing_provider = provider
+
+
+def prefetch_pricing() -> None:
+    _pricing_provider.prefetch()
 
 
 def estimate_batch_costs_in_usd(
@@ -11,9 +25,10 @@ def estimate_batch_costs_in_usd(
     file_reader: str,
     prompt: str = None,
     output: str = None,
-):
-
-    input_cost_per_1m, output_cost_per_1m = get_price_per_token(provider, model)
+) -> float:
+    input_cost_per_1m, output_cost_per_1m = (
+        _pricing_provider.get_price_per_million_tokens(provider, model)
+    )
 
     run_prompt_tokens = token_count(model, prompt) * len(file_paths) if prompt else 0
     run_output_tokens = token_count(model, output) * len(file_paths) if output else 0
@@ -28,25 +43,21 @@ def estimate_batch_costs_in_usd(
 
 
 def calculate_price(
-    input_tokens: int, output_tokens: int, provider: str, model: str
+    input_tokens: int,
+    output_tokens: int,
+    provider: str,
+    model: str,
+    is_provider_batch: bool = False,
 ) -> float:
-    input_cost_per_1m, output_cost_per_1m = get_price_per_token(provider, model)
-    return (input_cost_per_1m / 1_000_000) * input_tokens + (
+    input_cost_per_1m, output_cost_per_1m = (
+        _pricing_provider.get_price_per_million_tokens(provider, model)
+    )
+    price = (input_cost_per_1m / 1_000_000) * input_tokens + (
         output_cost_per_1m / 1_000_000
     ) * output_tokens
-
-
-def get_price_per_token(provider: str, model: str) -> tuple[float, float]:
-    params = {"provider": provider, "model": model}
-    r = requests.get("https://www.helicone.ai/api/llm-costs", params=params)
-    result = r.json()
-
-    try:
-        input_cost_per_1m = result["data"][0]["input_cost_per_1m"]
-        output_cost_per_1m = result["data"][0]["output_cost_per_1m"]
-    except IndexError:
-        raise ValueError(f"Model '{model}' not found with the provider '{provider}'.")
-    return input_cost_per_1m, output_cost_per_1m
+    if is_provider_batch:
+        price *= PROVIDER_BATCH_DISCOUNT
+    return price
 
 
 def tokens_from_file(file_path: str, file_reader, model) -> int:

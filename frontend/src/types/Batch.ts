@@ -28,6 +28,7 @@ export interface Batch {
     model: string;
     temperature: number;
     json_format: boolean;
+    use_provider_batch?: boolean;
     delay: number;
     costs_in_usd?: number;
     created_at: string;

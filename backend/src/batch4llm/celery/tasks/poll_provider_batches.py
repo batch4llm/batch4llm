@@ -73,6 +73,7 @@ def poll_provider_batches():
                                 entry.output_tokens,
                                 endpoint["provider"],
                                 model_name,
+                                is_provider_batch=True,
                             )
                         except Exception as e:
                             logger.error(
