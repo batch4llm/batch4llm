@@ -61,6 +61,18 @@ class EndpointOps:
             session.refresh(ep)
             return ep.to_dict_public()
 
+    def update_health(
+        self, endpoint_id: int, is_healthy: bool, error: str | None = None
+    ):
+        with self.SessionLocal() as session:
+            ep = session.query(Endpoint).filter_by(id=endpoint_id).first()
+            if not ep:
+                return
+            ep.is_healthy = is_healthy
+            ep.health_checked_at = func.now()
+            ep.health_error = error
+            session.commit()
+
     def delete(self, endpoint_id: int, user_id: int):
         with self.SessionLocal() as session:
             query = session.query(Endpoint).filter_by(id=endpoint_id)

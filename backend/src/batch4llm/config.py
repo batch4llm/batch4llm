@@ -25,6 +25,10 @@ class ServiceSettings(BaseSettings):
         default=None, validation_alias=AliasChoices("MINIO_PUBLIC_URL")
     )
 
+    model_sync_interval_minutes: int = Field(
+        default=60, validation_alias=AliasChoices("MODEL_SYNC_INTERVAL_MINUTES")
+    )
+
 
 class AppSettings(BaseSettings):
     secure_cookies: bool = Field(validation_alias=AliasChoices("SECURE_COOKIES"))

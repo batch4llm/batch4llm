@@ -150,6 +150,13 @@ class WorkerOps:
             )
             return endpoint
 
+    def get_all_active_endpoints(self) -> list[dict]:
+        with self.SessionLocal() as session:
+            endpoints = (
+                session.query(Endpoint).filter(Endpoint.archived_at.is_(None)).all()
+            )
+            return [e.to_dict_internal() for e in endpoints]
+
     def get_file_path(self, file_id: int) -> str:
         with self.SessionLocal() as session:
             file_path = session.query(File).filter_by(id=file_id).first().path

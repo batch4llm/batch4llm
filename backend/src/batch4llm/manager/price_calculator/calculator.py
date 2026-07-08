@@ -42,6 +42,14 @@ def estimate_batch_costs_in_usd(
     )
 
 
+def get_model_pricing(provider: str, model: str) -> tuple[float, float] | None:
+    """Returns (input_cost_per_1m_tokens, output_cost_per_1m_tokens), or None if unknown."""
+    try:
+        return _pricing_provider.get_price_per_million_tokens(provider, model)
+    except ValueError:
+        return None
+
+
 def calculate_price(
     input_tokens: int,
     output_tokens: int,
