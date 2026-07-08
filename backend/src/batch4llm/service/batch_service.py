@@ -1,4 +1,6 @@
 import logging
+from datetime import datetime
+from typing import Optional
 
 from .endpoint_service import EndpointService
 from .file_service import FileService
@@ -38,6 +40,7 @@ class BatchService:
         user_id: int,
         batch_worker_settings,
         use_provider_batch: bool = False,
+        scheduled_at: Optional[datetime] = None,
     ) -> dict:
         batch_name = f"batch_{hash(model + str(endpoint_id) + str(prompt_id))}"
         endpoint = self.endpoint_service.get(endpoint_id, user_id, True)
@@ -62,11 +65,13 @@ class BatchService:
         else:
             prompts_list = [MultiPrompt("-", prompt_content)]
 
-        initial_status = (
-            BatchStatus.PROVIDER_BATCH_PENDING
-            if use_provider_batch
-            else BatchStatus.QUEUED
-        )
+        if scheduled_at is not None:
+            initial_status = BatchStatus.SCHEDULED
+        elif use_provider_batch:
+            initial_status = BatchStatus.PROVIDER_BATCH_PENDING
+        else:
+            initial_status = BatchStatus.QUEUED
+
         batch_args = {
             "name": batch_name,
             "status": initial_status,
@@ -79,6 +84,7 @@ class BatchService:
             "user_id": user_id,
             "batch_worker_settings": batch_worker_settings,
             "use_provider_batch": use_provider_batch,
+            "scheduled_at": scheduled_at,
         }
 
         db_batch = self.db.batches.add(**batch_args)
@@ -105,7 +111,7 @@ class BatchService:
                     prompt_marker=prompt.marker,
                 )
 
-        if use_provider_batch:
+        if use_provider_batch and scheduled_at is None:
             submit_provider_batch.delay(db_batch["id"])
             self.db.batches.add_batch_log(
                 batch_id=db_batch["id"],

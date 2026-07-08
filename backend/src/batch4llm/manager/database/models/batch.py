@@ -57,6 +57,7 @@ class Batch(Base, ResourceMixin):
     failure_threshold_percent: Mapped[float] = mapped_column(Float, nullable=False)
     queue_batch: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
+    scheduled_at: Mapped[datetime | None] = mapped_column(nullable=True)
     started_at: Mapped[datetime] = mapped_column(nullable=True)
     stopped_at: Mapped[datetime] = mapped_column(nullable=True)
 
