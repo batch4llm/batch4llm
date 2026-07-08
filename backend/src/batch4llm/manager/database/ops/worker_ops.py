@@ -126,6 +126,10 @@ class WorkerOps:
                 .count()
             )
 
+    def count_total_task_of_batch(self, batch_id) -> int:
+        with self.SessionLocal() as session:
+            return session.query(BatchTask).filter_by(batch_id=batch_id).count()
+
     def get_running_llm_requests(self) -> list[LlmRequest]:
         with self.SessionLocal() as session:
             return list(

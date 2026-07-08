@@ -43,6 +43,6 @@ export interface BatchWorkerSettings {
     max_tasks_per_minute: number;
     max_parallel_tasks: number;
     retries_per_failed_task: number;
-    max_retries: number;
+    failure_threshold_percent: number;
     queue_batch: boolean;
 }

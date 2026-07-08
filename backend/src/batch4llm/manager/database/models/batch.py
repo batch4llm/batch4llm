@@ -54,7 +54,7 @@ class Batch(Base, ResourceMixin):
     max_tasks_per_minute: Mapped[int] = mapped_column(Integer, nullable=False)
     max_parallel_tasks: Mapped[int] = mapped_column(Integer, nullable=False)
     retries_per_failed_task: Mapped[int] = mapped_column(Integer, nullable=False)
-    max_retries: Mapped[int] = mapped_column(Integer, nullable=False)
+    failure_threshold_percent: Mapped[float] = mapped_column(Float, nullable=False)
     queue_batch: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
     started_at: Mapped[datetime] = mapped_column(nullable=True)

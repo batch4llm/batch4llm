@@ -13,7 +13,7 @@ class BatchWorkerSettings(BaseModel):
     max_tasks_per_minute: int = Field(..., gt=0, le=20)
     max_parallel_tasks: int = Field(..., gt=0, le=20)
     retries_per_failed_task: int = Field(..., gt=-1, le=20)
-    max_retries: int = Field(..., gt=-1, le=20)
+    failure_threshold_percent: float = Field(..., ge=0.0, le=100.0)
     queue_batch: bool = True
 
 

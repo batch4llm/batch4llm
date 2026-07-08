@@ -50,15 +50,20 @@ def dispatch_database_tasks():
     logger.debug(f"Fetched {len(running_batches)} running batches")
     for batch in running_batches:
 
-        if db.worker.count_failed_task_of_batch(batch.id) > batch.max_retries:
-            db.batches.update_status(batch.id, BatchStatus.FAILED)
-            db.batches.add_batch_log(
-                batch_id=batch.id,
-                message="Batch exceeded the failed task limit and is set to failed. Already running API Request will be finished.",
-                level=LogLevel.ERROR,
+        total_task_count = db.worker.count_total_task_of_batch(batch.id)
+        if total_task_count > 0:
+            failed_task_percent = (
+                db.worker.count_failed_task_of_batch(batch.id) / total_task_count * 100
             )
-            # todo: set remaining batch files failed
-            # todo: set remaining batch tasks failed
+            if failed_task_percent > batch.failure_threshold_percent:
+                db.batches.update_status(batch.id, BatchStatus.FAILED)
+                db.batches.add_batch_log(
+                    batch_id=batch.id,
+                    message="Batch exceeded the failure threshold and is set to failed. Already running API Request will be finished.",
+                    level=LogLevel.ERROR,
+                )
+                # todo: set remaining batch files failed
+                # todo: set remaining batch tasks failed
 
         if (
             db.worker.count_running_requests_on_batch(batch.id)

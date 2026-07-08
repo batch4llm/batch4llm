@@ -47,7 +47,7 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
     const [maxTasksPerMinute, setMaxTasksPerMinute] = useState<number>(5);
     const [maxParallelTasks, setMaxParallelTasks] = useState<number>(1);
     const [retriesPerFailedTask, setRetriesPerFailedTask] = useState<number>(2);
-    const [maxRetries, setMaxRetries] = useState<number>(5);
+    const [failureThresholdPercent, setFailureThresholdPercent] = useState<number>(20);
     const [queueBatch, setQueueBatch] = useState<boolean>(true);
     const [useProviderBatch, setUseProviderBatch] = useState<boolean>(false);
 
@@ -143,7 +143,7 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
                     max_tasks_per_minute: maxTasksPerMinute,
                     max_parallel_tasks: maxParallelTasks,
                     retries_per_failed_task: retriesPerFailedTask,
-                    max_retries: maxRetries,
+                    failure_threshold_percent: failureThresholdPercent,
                     queue_batch: queueBatch,
                 }
             }).then((data) => {
@@ -331,13 +331,13 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
                                 onChange={(e) => setRetriesPerFailedTask(parseInt(e.target.value))}
                             />
 
-                            <label>Max Retries</label>
+                            <label>Failure Threshold (%)</label>
                             <input
                                 type="number"
                                 required
-                                min={0} max={20}
-                                value={maxRetries}
-                                onChange={(e) => setMaxRetries(parseInt(e.target.value))}
+                                min={0} max={100}
+                                value={failureThresholdPercent}
+                                onChange={(e) => setFailureThresholdPercent(parseFloat(e.target.value))}
                             />
 
                             <label>Queue Batch</label>
