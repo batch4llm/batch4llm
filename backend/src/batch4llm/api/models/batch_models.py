@@ -13,7 +13,7 @@ class BatchWorkerSettings(BaseModel):
     max_tasks_per_minute: int = Field(..., gt=0, le=20)
     max_parallel_tasks: int = Field(..., gt=0, le=20)
     retries_per_failed_task: int = Field(..., gt=-1, le=20)
-    max_retries: int = Field(..., gt=-1, le=20)
+    failure_threshold_percent: float = Field(..., ge=0.0, le=100.0)
     queue_batch: bool = True
 
 
@@ -27,6 +27,7 @@ class BatchRunRequest(BaseModel):
     temperature: float = Field(..., ge=0.0, le=3.0)
     json_format: Optional[bool] = False
     use_provider_batch: bool = False
+    scheduled_at: Optional[datetime] = None
     # todo: implement/check limits
     batch_worker_settings: BatchWorkerSettings
 
@@ -49,6 +50,7 @@ class BatchData(BaseModel):
     provider_batch_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    scheduled_at: Optional[datetime] = None
     started_at: Optional[datetime]
     stopped_at: Optional[datetime]
     archived_at: Optional[datetime] = None

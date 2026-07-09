@@ -1,17 +1,6 @@
 import type { Prompt } from "../../types/Prompt";
 import styles from "./PromptCard.module.css";
 
-function countSteps(content: string): number | null {
-    try {
-        const j = JSON.parse(content);
-        if (Array.isArray(j)) return j.length;
-        if (Array.isArray(j?.steps)) return j.steps.length;
-        if (Array.isArray(j?.questions)) return j.questions.length;
-        if (j && typeof j === "object") return Object.keys(j).length;
-    } catch { /* not JSON */ }
-    return null;
-}
-
 function formatDate(s: string): string {
     if (!s) return "—";
     const d = new Date(s);
@@ -25,7 +14,7 @@ type Props = {
 
 export function PromptCard({ prompt }: Props) {
     const isMulti = prompt.multi_prompt;
-    const stepCount = isMulti ? countSteps(prompt.content) : null;
+    const stepCount = prompt.step_count;
 
     let preview = prompt.content || "";
     if (isMulti) {

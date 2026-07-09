@@ -21,3 +21,6 @@ class EndpointResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     archived_at: Optional[datetime] = None
+    is_healthy: Optional[bool] = None
+    health_checked_at: Optional[datetime] = None
+    health_error: Optional[str] = None

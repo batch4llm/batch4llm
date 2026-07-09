@@ -6,5 +6,7 @@ export interface Endpoint {
     url: string;
     token: string;
     created_at: string;
-    lastStatus?: "ok" | "down" | "idle";
+    is_healthy?: boolean | null;
+    health_checked_at?: string | null;
+    health_error?: string | null;
 }

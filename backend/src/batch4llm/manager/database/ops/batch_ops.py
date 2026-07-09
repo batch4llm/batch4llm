@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional, Tuple
 
 from sqlalchemy import func, asc
@@ -47,6 +48,7 @@ class BatchOps:
         user_id: int,
         batch_worker_settings,
         use_provider_batch: bool = False,
+        scheduled_at: Optional[datetime] = None,
     ):
         with self.SessionLocal() as session:
             subq = get_group_id_subquery(session, user_id)
@@ -63,10 +65,11 @@ class BatchOps:
                 user_id=user_id,
                 group_id=subq,
                 use_provider_batch=use_provider_batch,
+                scheduled_at=scheduled_at,
                 max_tasks_per_minute=batch_worker_settings.max_tasks_per_minute,
                 max_parallel_tasks=batch_worker_settings.max_parallel_tasks,
                 retries_per_failed_task=batch_worker_settings.retries_per_failed_task,
-                max_retries=batch_worker_settings.max_retries,
+                failure_threshold_percent=batch_worker_settings.failure_threshold_percent,
                 queue_batch=batch_worker_settings.queue_batch,
             )
 

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Mapped, mapped_column
 
 from batch4llm.manager.database.base import Base
@@ -13,6 +15,12 @@ class Endpoint(Base, ResourceMixin):
     provider: Mapped[str] = mapped_column(nullable=False)
     url: Mapped[str | None] = mapped_column(nullable=True)
     token: Mapped[str | None] = mapped_column(nullable=True)
+
+    is_healthy: Mapped[bool | None] = mapped_column(nullable=True, default=None)
+    health_checked_at: Mapped[datetime | None] = mapped_column(
+        nullable=True, default=None
+    )
+    health_error: Mapped[str | None] = mapped_column(nullable=True, default=None)
 
     def to_dict_internal(self):
         return {c.key: getattr(self, c.key) for c in self.__mapper__.columns}

@@ -22,6 +22,10 @@ app.conf.beat_schedule = {
         "task": "batch4llm.celery.tasks.poll_provider_batches.poll_provider_batches",
         "schedule": 60.0,
     },
+    "sync-endpoint-models": {
+        "task": "batch4llm.celery.tasks.sync_endpoint_models.sync_endpoint_models",
+        "schedule": service_settings.model_sync_interval_minutes * 60.0,
+    },
 }
 app.conf.task_track_started = True
 

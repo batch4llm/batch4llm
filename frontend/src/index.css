@@ -148,7 +148,10 @@ select, button, input {
     margin: 3px;
 }
 
-button {
+/* :where() keeps these at zero specificity, so a component's own button background
+   (e.g. a white button) always wins over this default navy hover, without needing
+   !important or a hover override in every module. */
+:where(button) {
     padding: 12px;
     background-color: var(--button-primary);
     color: var(--text-on-dark);
@@ -158,10 +161,10 @@ button {
     cursor: pointer;
     transition: background-color 0.3s;
 }
-button:hover {
+:where(button):hover {
     background-color: var(--button-hover);
 }
-button:active {
+:where(button):active {
     transform: scale(0.98);
 }
 

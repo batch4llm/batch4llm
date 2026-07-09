@@ -45,7 +45,7 @@ def test_batch_workflow(
             "max_tasks_per_minute": 20,
             "max_parallel_tasks": 1,
             "retries_per_failed_task": 3,
-            "max_retries": 0,  #! important for testing, set batch to failed as soon as one task fails
+            "failure_threshold_percent": 0,  #! important for testing, set batch to failed as soon as one task fails
             "queue_batch": False,
         },
     }

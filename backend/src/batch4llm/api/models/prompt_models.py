@@ -13,6 +13,7 @@ class PromptData(BaseModel):
     name: str
     content: str
     multi_prompt: bool
+    step_count: int | None = None
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None = None

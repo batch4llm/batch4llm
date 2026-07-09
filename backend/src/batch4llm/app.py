@@ -17,6 +17,7 @@ from batch4llm.service.file_service import FileService
 from batch4llm.service.batch_service import BatchService
 from batch4llm.service.jwt_authenticator import JWTAuthenticator
 from batch4llm.service.login_service import LoginService
+from batch4llm.service.model_service import ModelService
 from batch4llm.service.price_service import PriceService
 from batch4llm.service.prompt_service import PromptService
 from batch4llm.logger_config import setup_logging
@@ -88,6 +89,7 @@ def create_app(required_user_auth=True) -> FastAPI:
         export_service = ExportService(db)
         prompt_service = PromptService(db)
         price_service = PriceService(db, file_service)
+        model_service = ModelService(db)
 
         file_manager.sync_storage_with_db()
         prefetch_pricing()
@@ -102,6 +104,7 @@ def create_app(required_user_auth=True) -> FastAPI:
             jwt_authenticator,
             user_service,
             price_service,
+            model_service,
         )
         app.include_router(router, prefix="/api")
 

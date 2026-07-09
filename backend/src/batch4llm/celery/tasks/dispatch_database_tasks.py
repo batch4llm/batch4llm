@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from batch4llm.celery.worker import app
 from batch4llm.celery.tasks import process_single_file
+from batch4llm.celery.tasks.submit_provider_batch import submit_provider_batch
 from celery.utils.log import get_task_logger
 from batch4llm.config import ServiceSettings
 from batch4llm.manager.database import Database
@@ -28,8 +31,22 @@ def dispatch_database_tasks():
     scheduled_batches = db.worker.get_batches_with_status(BatchStatus.SCHEDULED)
     logger.debug(f"Fetched {len(scheduled_batches)} scheduled batches")
     for batch in scheduled_batches:
-        # todo: check if scheduled date is passed and then queue the batch
-        pass
+        if batch.scheduled_at is None or batch.scheduled_at > datetime.now():
+            continue
+
+        if batch.use_provider_batch:
+            db.batches.update_status(batch.id, BatchStatus.PROVIDER_BATCH_PENDING)
+            db.batches.add_batch_log(
+                batch_id=batch.id,
+                message="Scheduled start time reached. Provider batch submission queued.",
+            )
+            submit_provider_batch.delay(batch.id)
+        else:
+            db.batches.update_status(batch.id, BatchStatus.QUEUED)
+            db.batches.add_batch_log(
+                batch_id=batch.id,
+                message="Scheduled start time reached, batch is now queued.",
+            )
 
     queued_batches = db.worker.get_batches_with_status(BatchStatus.QUEUED)
     logger.debug(f"Fetched {len(queued_batches)} queued batches")
@@ -50,15 +67,20 @@ def dispatch_database_tasks():
     logger.debug(f"Fetched {len(running_batches)} running batches")
     for batch in running_batches:
 
-        if db.worker.count_failed_task_of_batch(batch.id) > batch.max_retries:
-            db.batches.update_status(batch.id, BatchStatus.FAILED)
-            db.batches.add_batch_log(
-                batch_id=batch.id,
-                message="Batch exceeded the failed task limit and is set to failed. Already running API Request will be finished.",
-                level=LogLevel.ERROR,
+        total_task_count = db.worker.count_total_task_of_batch(batch.id)
+        if total_task_count > 0:
+            failed_task_percent = (
+                db.worker.count_failed_task_of_batch(batch.id) / total_task_count * 100
             )
-            # todo: set remaining batch files failed
-            # todo: set remaining batch tasks failed
+            if failed_task_percent > batch.failure_threshold_percent:
+                db.batches.update_status(batch.id, BatchStatus.FAILED)
+                db.batches.add_batch_log(
+                    batch_id=batch.id,
+                    message="Batch exceeded the failure threshold and is set to failed. Already running API Request will be finished.",
+                    level=LogLevel.ERROR,
+                )
+                # todo: set remaining batch files failed
+                # todo: set remaining batch tasks failed
 
         if (
             db.worker.count_running_requests_on_batch(batch.id)

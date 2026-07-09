@@ -3,6 +3,7 @@ from .dispatch_database_tasks import dispatch_database_tasks
 from .cleanup_crashed_tasks import cleanup_crashed_tasks
 from .submit_provider_batch import submit_provider_batch
 from .poll_provider_batches import poll_provider_batches
+from .sync_endpoint_models import sync_endpoint_models
 
 __all__ = [
     "process_single_file",
@@ -10,4 +11,5 @@ __all__ = [
     "cleanup_crashed_tasks",
     "submit_provider_batch",
     "poll_provider_batches",
+    "sync_endpoint_models",
 ]
