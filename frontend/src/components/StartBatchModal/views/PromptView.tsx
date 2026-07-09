@@ -35,7 +35,7 @@ export function PromptView({ prompts, loading, selectedPrompt, onSelect, onBack 
                             <div className={styles.cardTop}>
                                 <div className={styles.cardName}>{p.name}</div>
                                 <span className={`${styles.cardBadge}${p.multi_prompt ? ` ${styles.multi}` : ""}`}>
-                                    {p.multi_prompt ? "Multi-step" : "1 step"}
+                                    {p.multi_prompt ? `${p.step_count ?? "?"} steps` : "1 step"}
                                 </span>
                             </div>
                             <div className={styles.cardPreview}>{p.content}</div>
