@@ -7,6 +7,7 @@ from batch4llm.manager.database.models.llm_request import LlmRequestStatus
 from batch4llm.manager.file_storage import MinIOStorage
 from batch4llm.manager.file_manager import FileManager
 from batch4llm.manager.llm_client.client_manager import ClientManager
+from batch4llm.manager.llm_client.models.exceptions import RateLimitError
 from batch4llm.manager.price_calculator import calculate_price
 
 service_settings = ServiceSettings()
@@ -82,6 +83,27 @@ def process_single_file(
                 message=f"Successfully processed llm request: {llm_request_id}",
             )
         return {"status": "success", "llm_request_id": llm_request_id}
+
+    except RateLimitError as e:
+        logger.warning(
+            f"Rate limit hit while processing file {file_id} for llm_request {llm_request_id}: {e}"
+        )
+
+        db.batches.update_llm_request_status(
+            llm_request_id=llm_request_id,
+            status=LlmRequestStatus.FAILED,
+        )
+        if batch_task_id:
+            db.batches.add_task_log(
+                batch_task_id=batch_task_id,
+                message=f"Rate limited while processing file: {file_id}: {str(e)}",
+                level=LogLevel.WARN,
+            )
+        return {
+            "status": "failed",
+            "llm_request_id": llm_request_id,
+            "error": str(e),
+        }
 
     except Exception as e:
         logger.exception(e)

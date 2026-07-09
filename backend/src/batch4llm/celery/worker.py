@@ -1,5 +1,7 @@
 from celery import Celery
+from celery.signals import worker_process_init
 from batch4llm.config import ServiceSettings
+from batch4llm.manager.database.base import dispose_all_engines
 
 service_settings = ServiceSettings()
 
@@ -30,3 +32,16 @@ app.conf.beat_schedule = {
 app.conf.task_track_started = True
 
 app.autodiscover_tasks(["batch4llm.celery.tasks"])
+
+
+@worker_process_init.connect
+def _dispose_inherited_db_engines(**kwargs):
+    """Drop pooled DB connections inherited from the parent process on fork.
+
+    Task modules create their Database/engine at import time, which happens
+    in the parent process before autodiscover_tasks's imports are forked out
+    to worker children. Without this, forked children share the parent's
+    pooled connections/sockets and corrupt libpq's protocol state under
+    concurrent use.
+    """
+    dispose_all_engines()
