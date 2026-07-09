@@ -29,6 +29,7 @@ export interface Batch {
     temperature: number;
     json_format: boolean;
     use_provider_batch?: boolean;
+    scheduled_at?: string;
     delay: number;
     costs_in_usd?: number;
     created_at: string;
@@ -45,4 +46,17 @@ export interface BatchWorkerSettings {
     retries_per_failed_task: number;
     failure_threshold_percent: number;
     queue_batch: boolean;
+}
+
+export interface BatchStartRequest {
+    prompt_id: number;
+    files: number[];
+    endpoint_id: number;
+    file_reader: string;
+    model: string;
+    temperature: number;
+    json_format?: boolean;
+    use_provider_batch?: boolean;
+    scheduled_at?: string;
+    batch_worker_settings: BatchWorkerSettings;
 }

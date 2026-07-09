@@ -1,15 +1,22 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Modal } from "../Modal/Modal.tsx";
 import { BatchesAPI } from "../../api/batches.ts";
-import { EndpointsAPI } from "../../api/endpoints.ts";
-import { PipelineAPI } from "../../api/pipeline.ts";
+import { ModelsAPI } from "../../api/models.ts";
 import { FilesAPI } from "../../api/files.ts";
+import { PipelineAPI } from "../../api/pipeline.ts";
 import { PromptsAPI } from "../../api/prompts.ts";
 import type { Prompt } from "../../types/Prompt.ts";
-import type { Batch } from "../../types/Batch.ts";
-import styles from "./StartBatchModal.module.css"
-import type {Endpoint} from "../../types/Endpoint.ts";
-
+import type { Batch, BatchStartRequest } from "../../types/Batch.ts";
+import type { ModelInfo } from "../../types/Model.ts";
+import type { FileData } from "../../types/FileData.ts";
+import type { ApiParams, FileMode, InvalidField, ViewId } from "./types.ts";
+import { MainView } from "./views/MainView.tsx";
+import { ModelView } from "./views/ModelView.tsx";
+import { FilesView } from "./views/FilesView.tsx";
+import { FileReaderView } from "./views/FileReaderView.tsx";
+import { SampleOutputView } from "./views/SampleOutputView.tsx";
+import { PromptView } from "./views/PromptView.tsx";
+import styles from "./StartBatchModal.module.css";
 
 type Props = {
     isOpen: boolean;
@@ -17,96 +24,100 @@ type Props = {
     onCreated: (batch: Batch) => void;
 };
 
-export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
-    const [endpointId, setEndpointId] = useState<number | null>(null);
-    const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
-    const [loadingEndpoints, setLoadingEndpoints] = useState(false);
+function prettifyReaderId(id: string): string {
+    return id.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
 
-    const [fileTag, setFileTag] = useState("");
+export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
+    const [view, setView] = useState<ViewId>("main");
+
+    // ── Data ─────────────────────────────────────────────────────────────
+    const [models, setModels] = useState<ModelInfo[]>([]);
+    const [loadingModels, setLoadingModels] = useState(false);
+    const [files, setFiles] = useState<FileData[]>([]);
+    const [loadingFiles, setLoadingFiles] = useState(false);
     const [fileTags, setFileTags] = useState<string[]>([]);
     const [loadingFileTags, setLoadingFileTags] = useState(false);
-
-    const [fileReader, setFileReader] = useState("");
     const [fileReaders, setFileReaders] = useState<string[]>([]);
     const [loadingFileReaders, setLoadingFileReaders] = useState(false);
-
-    const [jsonFormat, setJSONFormat] = useState("False");
-
-    const [model, setModel] = useState("");
-    const [models, setModels] = useState<string[]>([]);
-    const [loadingModels, setLoadingModels] = useState(false);
-
-    const [promptId, setPromptId] = useState<number | null>(null);
     const [prompts, setPrompts] = useState<Prompt[]>([]);
     const [loadingPrompts, setLoadingPrompts] = useState(false);
 
-    const [temperature, setTemperature] = useState<number>(1);
+    // ── Selections ───────────────────────────────────────────────────────
+    const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
+    const [selectedFileTags, setSelectedFileTags] = useState<string[]>([]);
+    const [selectedFileIds, setSelectedFileIds] = useState<number[]>([]);
+    const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+    const [fileMode, setFileMode] = useState<FileMode>("upload");
+    const [selectedFileReader, setSelectedFileReader] = useState<string | null>(null);
 
-    // Advanced batch settings
-    const [advancedOpen, setAdvancedOpen] = useState(false);
-    const [maxTasksPerMinute, setMaxTasksPerMinute] = useState<number>(5);
-    const [maxParallelTasks, setMaxParallelTasks] = useState<number>(1);
-    const [retriesPerFailedTask, setRetriesPerFailedTask] = useState<number>(2);
-    const [failureThresholdPercent, setFailureThresholdPercent] = useState<number>(20);
-    const [queueBatch, setQueueBatch] = useState<boolean>(true);
-    const [useProviderBatch, setUseProviderBatch] = useState<boolean>(false);
+    // ── Search ───────────────────────────────────────────────────────────
+    const [modelSearch, setModelSearch] = useState("");
+    const [fileSearch, setFileSearch] = useState("");
 
-    // Advanced model settings
-    const [advancedModelOpen, setAdvancedModelOpen] = useState(false);
+    // ── Collapsibles ─────────────────────────────────────────────────────
+    const [modelSettingsOpen, setModelSettingsOpen] = useState(false);
+    const [batchSettingsOpen, setBatchSettingsOpen] = useState(false);
+    const [estimateOpen, setEstimateOpen] = useState(false);
 
-    useEffect(() => {
-        if (!endpointId) {
-            setModels([]);
-            setModel("");
-            return;
-        }
+    // ── Model settings ───────────────────────────────────────────────────
+    const [temperature, setTemperature] = useState(1);
+    const [jsonFormat, setJsonFormat] = useState(false);
+    const [apiParams, setApiParams] = useState<ApiParams>({});
 
-        const loadModels = async () => {
-            setLoadingModels(true);
-            try {
-                const mdls = await EndpointsAPI.getModels(endpointId);
-                setModels(mdls);
-            } catch (err) {
-                console.error(err);
-                alert("Error loading models: " + err);
-            } finally {
-                setLoadingModels(false);
-            }
-        };
+    // ── Batch settings ───────────────────────────────────────────────────
+    const [maxTasksPerMinute, setMaxTasksPerMinute] = useState(5);
+    const [maxParallelTasks, setMaxParallelTasks] = useState(1);
+    const [retriesPerFailedTask, setRetriesPerFailedTask] = useState(2);
+    const [failureThresholdPercent, setFailureThresholdPercent] = useState(20);
+    const [queueBatch, setQueueBatch] = useState(true);
+    const [intelligentBackoff, setIntelligentBackoff] = useState(true);
 
-        loadModels();
-    }, [endpointId]);
+    // ── Sample output ────────────────────────────────────────────────────
+    const [sampleOutputText, setSampleOutputText] = useState("");
+    const [sampleOutputSet, setSampleOutputSet] = useState(false);
 
+    // ── Schedule / Provider Batch ────────────────────────────────────────
+    const [scheduleActive, setScheduleActive] = useState(false);
+    const [providerActive, setProviderActive] = useState(false);
+    const [scheduledAt, setScheduledAt] = useState("");
+
+    // ── Validation / submit ──────────────────────────────────────────────
+    const [invalid, setInvalid] = useState<Partial<Record<InvalidField, boolean>>>({});
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         if (!isOpen) return;
 
         const fetchData = async () => {
-            setLoadingEndpoints(true);
+            setLoadingModels(true);
+            setLoadingFiles(true);
             setLoadingFileTags(true);
             setLoadingFileReaders(true);
             setLoadingPrompts(true);
 
             try {
-                const [eps, fTags, fReaders, prms] = await Promise.all([
-                    EndpointsAPI.getAll(),
+                const [mdls, fls, fTags, fReaders, prms] = await Promise.all([
+                    ModelsAPI.getAll(),
+                    FilesAPI.getAll(),
                     FilesAPI.getFileTags(),
                     PipelineAPI.getFileReaders(),
                     PromptsAPI.getAll(),
                 ]);
 
-                setEndpoints(eps);
+                setModels(mdls);
+                setFiles(fls);
                 setFileTags(fTags);
-                setFileReaders(fReaders);
+                setFileReaders(fReaders.filter(r => r !== "upload"));
                 setPrompts(prms);
             } catch (err) {
                 console.error(err);
                 alert("Error while fetching data: " + err);
             } finally {
-                setLoadingEndpoints(false);
+                setLoadingModels(false);
+                setLoadingFiles(false);
                 setLoadingFileTags(false);
                 setLoadingFileReaders(false);
-                setLoadingModels(false);
                 setLoadingPrompts(false);
             }
         };
@@ -114,255 +125,282 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
         fetchData();
     }, [isOpen]);
 
+    // ── Derived selection helpers ────────────────────────────────────────
+    const byTagIds = new Set(
+        files.filter(f => selectedFileTags.some(t => f.tags?.includes(t))).map(f => f.id)
+    );
+    const selectedFileCount = new Set([...byTagIds, ...selectedFileIds]).size;
 
-    function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
-
-        FilesAPI.getFilesByTag(fileTag).then(r => {
-            let files = r.map(f => f.id)
-
-            if (promptId === null) {
-                alert("Please select a prompt");
-                return;
-            }
-            if (endpointId === null) {
-                alert("Please select a endpoint");
-                return;
-            }
-
-            BatchesAPI.create({
-                prompt_id: promptId,
-                files: files,
-                endpoint_id: endpointId,
-                file_reader: fileReader,
-                model: model,
-                temperature: temperature,
-                json_format: jsonFormat === "True",
-                use_provider_batch: useProviderBatch,
-                batch_worker_settings: {
-                    max_tasks_per_minute: maxTasksPerMinute,
-                    max_parallel_tasks: maxParallelTasks,
-                    retries_per_failed_task: retriesPerFailedTask,
-                    failure_threshold_percent: failureThresholdPercent,
-                    queue_batch: queueBatch,
-                }
-            }).then((data) => {
-                onCreated(data)
-            }).catch(error => {
-                console.error(error);
-                alert(error.detail);
-            })
-        })
-
-        onClose();
+    function filesSummary(): { value?: string; sub?: string } {
+        if (selectedFileCount === 0) return {};
+        const parts: string[] = [];
+        if (selectedFileTags.length) parts.push(`Tags: ${selectedFileTags.join(", ")}`);
+        if (selectedFileIds.length) parts.push(`${selectedFileIds.length} individual`);
+        return {
+            value: `${selectedFileCount} file${selectedFileCount !== 1 ? "s" : ""} selected`,
+            sub: parts.join(" · "),
+        };
     }
 
+    function triggerShake(field: InvalidField) {
+        setInvalid(prev => ({ ...prev, [field]: true }));
+        setTimeout(() => setInvalid(prev => ({ ...prev, [field]: false })), 500);
+    }
+
+    function clearShake(field: InvalidField) {
+        setInvalid(prev => ({ ...prev, [field]: false }));
+    }
+
+    // ── Navigation handlers ──────────────────────────────────────────────
+    function goBack() {
+        setView("main");
+    }
+
+    function selectModel(m: ModelInfo) {
+        setSelectedModel(m);
+        clearShake("model");
+        goBack();
+    }
+
+    function selectPrompt(p: Prompt) {
+        setSelectedPrompt(p);
+        clearShake("prompt");
+        goBack();
+    }
+
+    function selectFileReader(readerId: string) {
+        setSelectedFileReader(readerId);
+        clearShake("filereader");
+        goBack();
+    }
+
+    function handleSetFileMode(mode: FileMode) {
+        setFileMode(mode);
+        if (mode === "reader") setView("filereader");
+    }
+
+    function toggleFileTag(tag: string) {
+        setSelectedFileTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+    }
+
+    function toggleFileId(id: number) {
+        setSelectedFileIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    }
+
+    function activateParam(key: keyof ApiParams, value: number) {
+        setApiParams(prev => ({ ...prev, [key]: value }));
+    }
+
+    function resetParam(key: keyof ApiParams) {
+        setApiParams(prev => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+        });
+    }
+
+    function clearSample() {
+        setSampleOutputText("");
+        setSampleOutputSet(false);
+    }
+
+    function confirmSample() {
+        if (sampleOutputText.length > 0) setSampleOutputSet(true);
+        goBack();
+    }
+
+    function toggleSchedule() {
+        setScheduleActive(prev => {
+            const next = !prev;
+            if (next) setProviderActive(false);
+            return next;
+        });
+    }
+
+    function toggleProviderBatch() {
+        setProviderActive(prev => {
+            const next = !prev;
+            if (next) setScheduleActive(false);
+            return next;
+        });
+    }
+
+    // ── Validation ───────────────────────────────────────────────────────
+    function validateSelections(): boolean {
+        let valid = true;
+        if (!selectedModel) { triggerShake("model"); valid = false; }
+        if (selectedFileCount === 0) { triggerShake("files"); valid = false; }
+        if (!selectedPrompt) { triggerShake("prompt"); valid = false; }
+        if (fileMode === "reader" && !selectedFileReader) { triggerShake("filereader"); valid = false; }
+        return valid;
+    }
+
+    function runEstimate() {
+        if (!validateSelections()) return;
+        alert("This feature is not yet implemented.");
+    }
+
+    function handleStart() {
+        if (submitting) return;
+        if (!validateSelections()) return;
+
+        if (scheduleActive && !scheduledAt) {
+            triggerShake("schedule");
+            return;
+        }
+
+        const filesPayload = Array.from(new Set([...byTagIds, ...selectedFileIds]));
+        const fileReaderPayload = fileMode === "upload" ? "upload" : (selectedFileReader as string);
+
+        const payload: BatchStartRequest = {
+            prompt_id: selectedPrompt!.id,
+            files: filesPayload,
+            endpoint_id: selectedModel!.endpoint_id,
+            file_reader: fileReaderPayload,
+            model: selectedModel!.model_name,
+            temperature,
+            json_format: jsonFormat,
+            use_provider_batch: providerActive,
+            batch_worker_settings: {
+                max_tasks_per_minute: maxTasksPerMinute,
+                max_parallel_tasks: maxParallelTasks,
+                retries_per_failed_task: retriesPerFailedTask,
+                failure_threshold_percent: failureThresholdPercent,
+                queue_batch: queueBatch,
+            },
+        };
+
+        if (scheduleActive && scheduledAt) {
+            payload.scheduled_at = new Date(scheduledAt).toISOString();
+        }
+
+        setSubmitting(true);
+        BatchesAPI.create(payload)
+            .then((batch) => {
+                onCreated(batch);
+                onClose();
+            })
+            .catch((err) => {
+                console.error(err);
+                alert(err?.response?.data?.detail ?? err?.message ?? String(err));
+            })
+            .finally(() => setSubmitting(false));
+    }
+
+    const filesSum = filesSummary();
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose}>
-            <h3>Start Batch</h3>
+        <Modal isOpen={isOpen} onClose={onClose} className={styles.shell}>
+            {view === "main" && (
+                <MainView
+                    selectedModel={selectedModel}
+                    onOpenModel={() => setView("model")}
+                    filesValue={filesSum.value}
+                    filesSub={filesSum.sub}
+                    onOpenFiles={() => setView("files")}
+                    promptValue={selectedPrompt?.name}
+                    promptSub={selectedPrompt ? (selectedPrompt.multi_prompt ? "Multi-step" : "1 step") : undefined}
+                    onOpenPrompt={() => setView("prompt")}
+                    fileMode={fileMode}
+                    onSetFileMode={handleSetFileMode}
+                    fileReaderValue={selectedFileReader ? prettifyReaderId(selectedFileReader) : undefined}
+                    onOpenFileReader={() => setView("filereader")}
+                    invalid={invalid}
+                    modelSettingsOpen={modelSettingsOpen}
+                    onToggleModelSettings={() => setModelSettingsOpen(v => !v)}
+                    jsonFormat={jsonFormat}
+                    onSetJsonFormat={setJsonFormat}
+                    temperature={temperature}
+                    onSetTemperature={setTemperature}
+                    apiParams={apiParams}
+                    onActivateParam={activateParam}
+                    onResetParam={resetParam}
+                    batchSettingsOpen={batchSettingsOpen}
+                    onToggleBatchSettings={() => setBatchSettingsOpen(v => !v)}
+                    maxTasksPerMinute={maxTasksPerMinute}
+                    onSetMaxTasksPerMinute={setMaxTasksPerMinute}
+                    maxParallelTasks={maxParallelTasks}
+                    onSetMaxParallelTasks={setMaxParallelTasks}
+                    retriesPerFailedTask={retriesPerFailedTask}
+                    onSetRetriesPerFailedTask={setRetriesPerFailedTask}
+                    failureThresholdPercent={failureThresholdPercent}
+                    onSetFailureThresholdPercent={setFailureThresholdPercent}
+                    queueBatch={queueBatch}
+                    onSetQueueBatch={setQueueBatch}
+                    intelligentBackoff={intelligentBackoff}
+                    onSetIntelligentBackoff={setIntelligentBackoff}
+                    estimateOpen={estimateOpen}
+                    onToggleEstimate={() => setEstimateOpen(v => !v)}
+                    onRunEstimate={runEstimate}
+                    sampleOutputSet={sampleOutputSet}
+                    onOpenSampleOutput={() => setView("sampleoutput")}
+                    scheduleActive={scheduleActive}
+                    onToggleSchedule={toggleSchedule}
+                    providerActive={providerActive}
+                    onToggleProviderBatch={toggleProviderBatch}
+                    scheduledAt={scheduledAt}
+                    onSetScheduledAt={setScheduledAt}
+                    onStart={handleStart}
+                    submitting={submitting}
+                />
+            )}
 
-            <form onSubmit={handleSubmit} className={styles.batchStartForm}>
+            {view === "model" && (
+                <ModelView
+                    models={models}
+                    loading={loadingModels}
+                    selectedModel={selectedModel}
+                    search={modelSearch}
+                    onSearchChange={setModelSearch}
+                    onSelect={selectModel}
+                    onBack={goBack}
+                />
+            )}
 
-                <label>Endpoint</label>
-                <select
-                    required
-                    value={endpointId ?? ""}
-                    onChange={(e) => setEndpointId(parseInt(e.target.value))}
-                    disabled={loadingEndpoints}
-                >
-                    <option value="" disabled>
-                        {loadingEndpoints ? "Loading..." : "Please select"}
-                    </option>
-                    {endpoints.map((ep) => (
-                        <option key={ep.id} value={ep.id}>
-                            {ep.name}
-                        </option>
-                    ))}
-                </select>
+            {view === "files" && (
+                <FilesView
+                    files={files}
+                    loading={loadingFiles || loadingFileTags}
+                    fileTags={fileTags}
+                    selectedFileTags={selectedFileTags}
+                    selectedFileIds={selectedFileIds}
+                    search={fileSearch}
+                    onSearchChange={setFileSearch}
+                    onToggleTag={toggleFileTag}
+                    onToggleFile={toggleFileId}
+                    onDone={goBack}
+                />
+            )}
 
-                <label>Model</label>
-                <select
-                    required
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    disabled={!endpointId || loadingModels}
-                >
-                    <option value="" disabled>
-                        {!endpointId
-                            ? "Select endpoint first"
-                            : loadingModels
-                                ? "Loading..."
-                                : "Please select"}
-                    </option>
-                    {models.map((md) => (
-                        <option key={md} value={md}>
-                            {md.replace("models/", "")}
-                        </option>
-                    ))}
-                </select>
+            {view === "filereader" && (
+                <FileReaderView
+                    fileReaders={fileReaders}
+                    loading={loadingFileReaders}
+                    selectedFileReader={selectedFileReader}
+                    onSelect={selectFileReader}
+                    onBack={goBack}
+                />
+            )}
 
-                <label>File-Tag</label>
-                <select
-                    required
-                    value={fileTag}
-                    onChange={(e) => setFileTag(e.target.value)}
-                >
-                    <option value="" disabled>
-                        {loadingFileTags ? "Loading..." : "Please select"}
-                    </option>
-                    {fileTags.map((ft) => (
-                        <option key={ft} value={ft}>
-                            {ft}
-                        </option>
-                    ))}
-                </select>
+            {view === "sampleoutput" && (
+                <SampleOutputView
+                    text={sampleOutputText}
+                    onTextChange={setSampleOutputText}
+                    onClear={clearSample}
+                    onConfirm={confirmSample}
+                    onBack={goBack}
+                />
+            )}
 
-                <label>File Reader</label>
-                <select
-                    required
-                    value={fileReader}
-                    onChange={(e) => setFileReader(e.target.value)}
-                >
-                    <option value="" disabled>
-                        {loadingFileReaders ? "Loading..." : "Please select"}
-                    </option>
-                    {fileReaders.map((fr) => (
-                        <option key={fr} value={fr}>
-                            {fr}
-                        </option>
-                    ))}
-                </select>
-
-                <label>Prompt</label>
-                <select
-                    required
-                    value={promptId ?? ""}
-                    onChange={(e) => setPromptId(parseInt(e.target.value))}
-                >
-                    <option value="" disabled>
-                        {loadingPrompts ? "Loading..." : "Please select"}
-                    </option>
-                    {prompts.map((pr) => (
-                        <option key={pr.id} value={pr.id}>
-                            {pr.name}
-                        </option>
-                    ))}
-                </select>
-
-
-                {/* Model Settings */}
-                <div className={styles.advancedSection}>
-                    <button
-                        type="button"
-                        className={styles.advancedToggle}
-                        onClick={() => setAdvancedModelOpen(prev => !prev)}
-                    >
-                        <span className={`${styles.advancedArrow} ${advancedOpen ? styles.advancedArrowOpen : ""}`}>
-                            ▶
-                        </span>
-                        Model Settings
-                    </button>
-
-                    {advancedModelOpen && (
-                        <div className={styles.advancedFields}>
-                            <label>Temperature</label>
-                            <input
-                                id="temperature-input"
-                                placeholder="Temperature"
-                                required
-                                type="number"
-                                value={temperature} min="0.0" max="3.0"
-                                step="0.1"
-                                onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                            />
-
-                            <label>Answer Format</label>
-                            <select
-                                required
-                                value={jsonFormat}
-                                onChange={(e) => setJSONFormat(e.target.value)}
-                            >
-                                <option value="True">JSON</option>
-                                <option value="False">Text</option>
-                            </select>
-                        </div>
-                    )}
-                </div>
-
-                {/* Batch Settings */}
-                <div className={styles.advancedSection}>
-                    <button
-                        type="button"
-                        className={styles.advancedToggle}
-                        onClick={() => setAdvancedOpen(prev => !prev)}
-                    >
-                        <span className={`${styles.advancedArrow} ${advancedOpen ? styles.advancedArrowOpen : ""}`}>
-                            ▶
-                        </span>
-                        Batch Settings
-                    </button>
-
-                    {advancedOpen && (
-                        <div className={styles.advancedFields}>
-                            <label>Max Tasks per Minute</label>
-                            <input
-                                type="number"
-                                required
-                                min={1} max={20}
-                                value={maxTasksPerMinute}
-                                onChange={(e) => setMaxTasksPerMinute(parseInt(e.target.value))}
-                            />
-
-                            <label>Max Parallel Tasks</label>
-                            <input
-                                type="number"
-                                required
-                                min={1} max={20}
-                                value={maxParallelTasks}
-                                onChange={(e) => setMaxParallelTasks(parseInt(e.target.value))}
-                            />
-
-                            <label>Retries per Failed Task</label>
-                            <input
-                                type="number"
-                                required
-                                min={0} max={20}
-                                value={retriesPerFailedTask}
-                                onChange={(e) => setRetriesPerFailedTask(parseInt(e.target.value))}
-                            />
-
-                            <label>Failure Threshold (%)</label>
-                            <input
-                                type="number"
-                                required
-                                min={0} max={100}
-                                value={failureThresholdPercent}
-                                onChange={(e) => setFailureThresholdPercent(parseFloat(e.target.value))}
-                            />
-
-                            <label>Queue Batch</label>
-                            <select
-                                value={queueBatch ? "true" : "false"}
-                                onChange={(e) => setQueueBatch(e.target.value === "true")}
-                            >
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                            </select>
-
-                            <label>Provider Batch</label>
-                            <select
-                                value={useProviderBatch ? "true" : "false"}
-                                onChange={(e) => setUseProviderBatch(e.target.value === "true")}
-                            >
-                                <option value="false">No</option>
-                                <option value="true">Yes</option>
-                            </select>
-                        </div>
-                    )}
-                </div>
-
-                <button type="submit">Start</button>
-            </form>
+            {view === "prompt" && (
+                <PromptView
+                    prompts={prompts}
+                    loading={loadingPrompts}
+                    selectedPrompt={selectedPrompt}
+                    onSelect={selectPrompt}
+                    onBack={goBack}
+                />
+            )}
         </Modal>
     );
 }

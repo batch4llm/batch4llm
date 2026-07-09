@@ -1,15 +1,6 @@
-import { PROVIDERS } from "../../config/providers";
 import type { Endpoint } from "../../types/Endpoint";
-import customLogo from "../../assets/providers/custom.png";
+import { logoFor } from "../../utils/providerLogo";
 import styles from "./EndpointCard.module.css";
-
-const LOGO_MAP: Record<string, string> = Object.fromEntries(
-    PROVIDERS.map(p => [p.provider, p.image as string])
-);
-
-function logoFor(provider: string): string {
-    return LOGO_MAP[provider.toLowerCase()] ?? customLogo;
-}
 
 function maskToken(t: string): string | null {
     if (!t) return null;
