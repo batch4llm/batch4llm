@@ -1,6 +1,7 @@
 import type { ModelInfo } from "../../../types/Model";
 import { logoFor } from "../../../utils/providerLogo";
 import { fmtCost } from "../formatCost.ts";
+import { displayModelName } from "../formatModelName.ts";
 import styles from "../StartBatchModal.module.css";
 import { IconBack, IconCheck, IconSearch } from "../Icons.tsx";
 
@@ -30,7 +31,7 @@ export function ModelView({ models, loading, selectedModel, search, onSearchChan
                     <IconBack /> Back
                 </button>
                 <h2 className={styles.viewTitle}>Select Model</h2>
-                {selectedModel && <span className={styles.badgeSelected}>{selectedModel.model_name}</span>}
+                {selectedModel && <span className={styles.badgeSelected}>{displayModelName(selectedModel.model_name)}</span>}
             </div>
 
             <div className={styles.searchWrap}>
@@ -60,7 +61,7 @@ export function ModelView({ models, loading, selectedModel, search, onSearchChan
                                 <img src={logoFor(m.provider)} alt="" />
                             </div>
                             <div className={styles.modelInfo}>
-                                <div className={styles.modelName}>{m.model_name}</div>
+                                <div className={styles.modelName}>{displayModelName(m.model_name)}</div>
                                 <div className={styles.modelEndpoint}>{m.endpoint_name}</div>
                                 <div className={styles.modelCost}>
                                     In ${fmtCost(m.input_cost_per_1m_tokens)} · Out ${fmtCost(m.output_cost_per_1m_tokens)}

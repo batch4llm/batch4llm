@@ -1,6 +1,7 @@
 import type { ModelInfo } from "../../../types/Model";
 import { logoFor } from "../../../utils/providerLogo";
 import { fmtCost } from "../formatCost.ts";
+import { displayModelName } from "../formatModelName.ts";
 import styles from "../StartBatchModal.module.css";
 import { SelectorRow } from "../components/SelectorRow.tsx";
 import { Collapsible } from "../components/Collapsible.tsx";
@@ -106,7 +107,7 @@ export function MainView({
                 <SelectorRow
                     icon={selectedModel ? <img src={logoFor(selectedModel.provider)} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <IconModel />}
                     label="Model"
-                    value={selectedModel ? `${selectedModel.model_name} · ${selectedModel.endpoint_name}` : undefined}
+                    value={selectedModel ? `${displayModelName(selectedModel.model_name)} · ${selectedModel.endpoint_name}` : undefined}
                     emptyText="Select a model..."
                     sub={selectedModel
                         ? `$${fmtCost(selectedModel.input_cost_per_1m_tokens)} / $${fmtCost(selectedModel.output_cost_per_1m_tokens)} per 1M tokens`

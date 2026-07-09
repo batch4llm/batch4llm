@@ -13,7 +13,8 @@ input[type="range"] { accent-color: #1e1e2f; width: 100%; }
 input[type="checkbox"] { accent-color: #1e1e2f; cursor: pointer; width: 15px; height: 15px; }
 
 /* ── Views ───────────────────────────────────────────────────────────── */
-.view { padding: 24px; animation: subIn 0.15s ease; }
+/* min-height keeps the modal from resizing when switching to sparser sub-views (e.g. few models/prompts) — short content just leaves white space below instead of shrinking the shell. */
+.view { padding: 24px; min-height: 600px; box-sizing: border-box; animation: subIn 0.15s ease; }
 @keyframes subIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
 
 .viewHeader { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
@@ -204,7 +205,7 @@ input[type="checkbox"] { accent-color: #1e1e2f; cursor: pointer; width: 15px; he
 }
 .searchInput:focus { border-color: #1e1e2f; }
 
-.modelGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; max-height: 420px; overflow-y: auto; }
+.modelGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 7px; align-content: start; }
 .modelTile {
   display: flex; align-items: center; gap: 9px; padding: 10px 11px;
   background: white; border: 1.5px solid #e5e5e5; border-radius: 10px;
@@ -252,7 +253,7 @@ input[type="checkbox"] { accent-color: #1e1e2f; cursor: pointer; width: 15px; he
 .emptyNote { font-size: 12.5px; color: #bbb; text-align: center; padding: 16px 0; font-style: italic; }
 
 /* ── Prompt / file reader cards ──────────────────────────────────────── */
-.cardList { display: flex; flex-direction: column; gap: 7px; max-height: 500px; overflow-y: auto; }
+.cardList { display: flex; flex-direction: column; gap: 7px; }
 .card {
   display: block; padding: 12px 14px; background: white; border: 1.5px solid #e5e5e5;
   border-radius: 10px; cursor: pointer; width: 100%; text-align: left;
