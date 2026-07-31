@@ -1,0 +1,46 @@
+services:
+  traefik:
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # Uncomment while testing to avoid Let's Encrypt's production rate limits:
+      # - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+    volumes:
+      - "letsencrypt:/letsencrypt"
+
+  backend:
+    environment:
+      MINIO_PUBLIC_URL: "https://${DOMAIN}/storage"
+    labels:
+      - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/health`) || PathPrefix(`/docs`) || Path(`/redoc`) || Path(`/openapi.json`))"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+
+  frontend:
+    labels:
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      # Redirect any plain-HTTP request to HTTPS
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+      - "traefik.http.routers.http-catchall.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+      - "traefik.http.routers.http-catchall.middlewares=https-redirect"
+      - "traefik.http.routers.http-catchall.service=frontend"
+      - "traefik.http.routers.http-catchall.priority=1"
+
+  minio:
+    labels:
+      - "traefik.http.routers.minio.rule=Host(`${DOMAIN}`) && PathPrefix(`/storage`)"
+      - "traefik.http.routers.minio.entrypoints=websecure"
+      - "traefik.http.routers.minio.tls.certresolver=letsencrypt"
+
+volumes:
+  letsencrypt:
