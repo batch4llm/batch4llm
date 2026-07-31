@@ -30,6 +30,14 @@ This is recommended for production.
    docker compose up -d
 ```
 
+### HTTPS
+
+By default, Traefik only serves plain HTTP on port 80. To enable HTTPS via Let's Encrypt, set `DOMAIN` and `ACME_EMAIL` in your `.env` (see `.env.example`) and start with the `compose.prod.yaml` override:
+```
+   docker compose -f compose.yaml -f compose.prod.yaml up -d
+```
+This adds a `websecure` (443) entrypoint with automatic certificates and redirects plain HTTP traffic to HTTPS. `DOMAIN` must be a public hostname that resolves to this server, since Let's Encrypt validates ownership over port 80.
+
 
 ## Setup (Build from Repository)
 
