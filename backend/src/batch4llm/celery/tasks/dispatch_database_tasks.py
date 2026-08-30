@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from batch4llm.celery.worker import app
 from batch4llm.celery.tasks import process_single_file
@@ -31,7 +31,9 @@ def dispatch_database_tasks():
     scheduled_batches = db.worker.get_batches_with_status(BatchStatus.SCHEDULED)
     logger.debug(f"Fetched {len(scheduled_batches)} scheduled batches")
     for batch in scheduled_batches:
-        if batch.scheduled_at is None or batch.scheduled_at > datetime.now():
+        if batch.scheduled_at is None or batch.scheduled_at > datetime.now(
+            timezone.utc
+        ):
             continue
 
         if batch.use_provider_batch:
