@@ -44,6 +44,7 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
     const [loadingPrompts, setLoadingPrompts] = useState(false);
 
     // ── Selections ───────────────────────────────────────────────────────
+    const [batchName, setBatchName] = useState("");
     const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
     const [selectedFileTags, setSelectedFileTags] = useState<string[]>([]);
     const [selectedFileIds, setSelectedFileIds] = useState<number[]>([]);
@@ -261,6 +262,7 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
             temperature,
             json_format: jsonFormat,
             use_provider_batch: providerActive,
+            name: batchName.trim() || undefined,
             batch_worker_settings: {
                 max_tasks_per_minute: maxTasksPerMinute,
                 max_parallel_tasks: maxParallelTasks,
@@ -293,6 +295,9 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
         <Modal isOpen={isOpen} onClose={onClose} className={styles.shell}>
             {view === "main" && (
                 <MainView
+                    batchName={batchName}
+                    onSetBatchName={setBatchName}
+                    batchNamePlaceholder={selectedModel ? `${selectedModel.model_name}_<timestamp>` : "auto-generated"}
                     selectedModel={selectedModel}
                     onOpenModel={() => setView("model")}
                     filesValue={filesSum.value}

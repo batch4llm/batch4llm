@@ -10,6 +10,11 @@ import type { ApiParams, FileMode, InvalidField } from "../types.ts";
 import { IconModel, IconFiles, IconPrompt, IconFileHandling, IconPlay, IconSample, IconCheck } from "../Icons.tsx";
 
 type Props = {
+    // Name
+    batchName: string;
+    onSetBatchName: (v: string) => void;
+    batchNamePlaceholder: string;
+
     // Model
     selectedModel: ModelInfo | null;
     onOpenModel: () => void;
@@ -80,6 +85,7 @@ type Props = {
 };
 
 export function MainView({
+    batchName, onSetBatchName, batchNamePlaceholder,
     selectedModel, onOpenModel,
     filesValue, filesSub, onOpenFiles,
     promptValue, promptSub, onOpenPrompt,
@@ -102,6 +108,18 @@ export function MainView({
         <div className={styles.view}>
             <h2 className={styles.mainTitle}>Start Batch</h2>
             <p className={styles.mainSub}>Configure and launch a new file batch.</p>
+
+            <div className={styles.nameField}>
+                <label className={styles.nameFieldLabel}>Batch Name</label>
+                <input
+                    type="text"
+                    className={styles.fieldInput}
+                    value={batchName}
+                    placeholder={batchNamePlaceholder}
+                    maxLength={200}
+                    onChange={(e) => onSetBatchName(e.target.value)}
+                />
+            </div>
 
             <div className={styles.selectorStack}>
                 <SelectorRow

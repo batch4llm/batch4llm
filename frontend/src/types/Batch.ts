@@ -58,5 +58,6 @@ export interface BatchStartRequest {
     json_format?: boolean;
     use_provider_batch?: boolean;
     scheduled_at?: string;
+    name?: string;
     batch_worker_settings: BatchWorkerSettings;
 }

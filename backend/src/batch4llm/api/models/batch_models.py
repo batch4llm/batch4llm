@@ -28,6 +28,7 @@ class BatchRunRequest(BaseModel):
     json_format: Optional[bool] = False
     use_provider_batch: bool = False
     scheduled_at: Optional[datetime] = None
+    name: Optional[str] = Field(default=None, max_length=200)
     # todo: implement/check limits
     batch_worker_settings: BatchWorkerSettings
 
