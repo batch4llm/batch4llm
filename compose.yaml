@@ -17,15 +17,9 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
-      # Uncomment for HTTPS:
-      # - "--entrypoints.websecure.address=:443"
-      # - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-      # - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-      # - "--certificatesresolvers.letsencrypt.acme.email=you@example.com"
-      # - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # HTTPS is enabled via compose.prod.yaml (see README)
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      # - "letsencrypt:/letsencrypt"
     depends_on:
       - backend
       - frontend
@@ -119,4 +113,3 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
-  # letsencrypt:
