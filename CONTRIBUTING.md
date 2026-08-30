@@ -46,6 +46,8 @@ This registers a Git hook that runs Black, Ruff, and ESLint automatically before
 docker compose -f compose.yaml -f compose.build.yaml -f compose.dev.yaml up -d --build
 ```
 
+Or simply `make dev` (see [Makefile](Makefile) for shortcuts, incl. `make test` and `make lint`).
+
 Everything runs via Docker. The frontend uses Vite with HMR and is available at `http://localhost:80`. Changes in `frontend/src` are reflected immediately in the browser.
 
 ## Tests
