@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Security
 from fastapi.responses import Response
 
 from batch4llm.service.file_service import FileService
-from batch4llm.api.models.file_models import FileData
+from batch4llm.api.models.file_models import FileData, TagsUpdate
 from fastapi import UploadFile, File, Form
 from typing import Optional, List
 
@@ -38,6 +38,13 @@ def build_file_router(file_service: FileService, jwt_authenticator: JWTAuthentic
     ):
         try:
             return file_service.set_file_archived(file_id, user["id"], archived)
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+    @router.patch("/{file_id}/tags", response_model=FileData)
+    def set_file_tags(file_id: int, body: TagsUpdate, user=Security(jwt_authenticator)):
+        try:
+            return file_service.set_file_tags(file_id, user["id"], body.tags)
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 

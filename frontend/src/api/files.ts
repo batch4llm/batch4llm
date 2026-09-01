@@ -30,6 +30,9 @@ export const FilesAPI = {
     getFilesByTag: (tag: string): Promise<FileData[]> =>
         api.get(`/files/by-tag/${tag}`).then(r => r.data),
 
+    updateTags: (file_id: number, tags: string[]): Promise<FileData> =>
+        api.patch(`/files/${file_id}/tags`, { tags }).then(r => r.data),
+
     getUrl: (file_id: number): Promise<string> =>
         api.get(`/files/${file_id}/url`).then(r => r.data.url),
 };

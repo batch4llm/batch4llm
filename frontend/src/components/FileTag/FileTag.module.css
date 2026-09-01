@@ -19,6 +19,26 @@
   flex-shrink: 0;
 }
 
+.tagRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  margin: 0 -2px 0 1px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.tagRemove:hover { opacity: 1; background: rgba(0, 0, 0, 0.08); }
+
 .filterTag {
   cursor: pointer;
   font-size: 11px;

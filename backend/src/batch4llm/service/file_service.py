@@ -20,6 +20,9 @@ class FileService:
     def set_file_archived(self, file_id: int, user_id: int, archived: bool) -> dict:
         return self.db.files.set_archived(file_id, user_id, archived)
 
+    def set_file_tags(self, file_id: int, user_id: int, tags: List[str]) -> dict:
+        return self.db.files.set_tags(file_id, user_id, tags)
+
     def delete_file(self, file_id: int, user_id: int) -> dict:
         deleted = self.file_manager.delete(file_id, user_id)
         if not deleted:

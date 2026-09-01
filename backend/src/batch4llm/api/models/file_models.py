@@ -11,3 +11,7 @@ class FileData(BaseModel):
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None = None
+
+
+class TagsUpdate(BaseModel):
+    tags: list[str]

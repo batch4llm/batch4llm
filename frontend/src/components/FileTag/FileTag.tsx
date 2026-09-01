@@ -13,9 +13,10 @@ type FileTagProps = {
     filter?: boolean;
     active?: boolean;
     onClick?: () => void;
+    onRemove?: () => void;
 };
 
-export function FileTag({ tag, filter = false, active = true, onClick }: FileTagProps) {
+export function FileTag({ tag, filter = false, active = true, onClick, onRemove }: FileTagProps) {
     const ci = tagColorIndex(tag);
     const cls = [
         styles.tag,
@@ -27,6 +28,16 @@ export function FileTag({ tag, filter = false, active = true, onClick }: FileTag
         <span className={cls} onClick={onClick}>
             <span className={styles.tagDot} />
             {tag}
+            {onRemove && (
+                <button
+                    type="button"
+                    className={styles.tagRemove}
+                    onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                    aria-label={`Remove tag ${tag}`}
+                >
+                    ×
+                </button>
+            )}
         </span>
     );
 }

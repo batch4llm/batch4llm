@@ -26,9 +26,9 @@ function isImage(file: FileData): boolean {
     return ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext ?? "");
 }
 
-type Props = { file: FileData | null; onClose: () => void };
+type Props = { file: FileData | null; onClose: () => void; onEditTags?: (file: FileData) => void };
 
-export function FileViewModal({ file, onClose }: Props) {
+export function FileViewModal({ file, onClose, onEditTags }: Props) {
     const [loadedId, setLoadedId] = useState<number | null>(null);
     const [url, setUrl] = useState<string | null>(null);
     const [error, setError] = useState(false);
@@ -97,7 +97,15 @@ export function FileViewModal({ file, onClose }: Props) {
                 </button>
             </div>
 
-            {(file.tags ?? []).length > 0 && (
+            {onEditTags && (
+                <div className={modalStyles.modalTags}>
+                    {(file.tags ?? []).map(t => <FileTag key={t} tag={t} />)}
+                    <button className={styles.editTagsBtn} onClick={() => onEditTags(file)}>
+                        Edit tags
+                    </button>
+                </div>
+            )}
+            {!onEditTags && (file.tags ?? []).length > 0 && (
                 <div className={modalStyles.modalTags}>
                     {file.tags!.map(t => <FileTag key={t} tag={t} />)}
                 </div>

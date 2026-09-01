@@ -1,5 +1,19 @@
 .wideModal { width: 720px; }
 
+.editTagsBtn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-family: inherit;
+}
+
+.editTagsBtn:hover { text-decoration: underline; }
+
 /* ── PDF iframe ──────────────────────────────────────────── */
 .viewer {
   width: 100%;

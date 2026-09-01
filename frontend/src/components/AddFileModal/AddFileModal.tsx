@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { Modal } from "../Modal/Modal";
 import { FilesAPI } from "../../api/files";
+import { TagsInput } from "../TagsInput/TagsInput";
 import styles from "./AddFileModal.module.css";
 
 type Props = {
@@ -11,7 +12,7 @@ type Props = {
 
 export function AddFileModal({ isOpen, onClose, onUploaded }: Props) {
     const [files, setFiles] = useState<File[]>(() => isOpen ? [] : []);
-    const [tag, setTag] = useState(() => isOpen ? "" : "");
+    const [tags, setTags] = useState<string[]>(() => isOpen ? [] : []);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [inputKey, setInputKey] = useState(0);
 
@@ -37,7 +38,7 @@ export function AddFileModal({ isOpen, onClose, onUploaded }: Props) {
 
         try {
             for (const file of files) {
-                await FilesAPI.upload(file, tag ? [tag] : undefined);
+                await FilesAPI.upload(file, tags.length > 0 ? tags : undefined);
             }
             onUploaded(true);
             onClose();
@@ -91,12 +92,7 @@ export function AddFileModal({ isOpen, onClose, onUploaded }: Props) {
             )}
 
             <form onSubmit={handleSubmit} className={styles.form}>
-                <input
-                    type="text"
-                    placeholder="Tag (optional)"
-                    value={tag}
-                    onChange={(e) => setTag(e.target.value)}
-                />
+                <TagsInput tags={tags} onChange={setTags} placeholder="Tags (optional)" />
 
                 <button type="submit" disabled={files.length === 0}>
                     Upload

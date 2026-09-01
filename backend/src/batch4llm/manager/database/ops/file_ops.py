@@ -1,3 +1,4 @@
+from typing import List
 from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
 from batch4llm.core.exceptions import ResourceInUseError
@@ -87,6 +88,17 @@ class FileOps:
             session.delete(file)
             session.commit()
             return file
+
+    def set_tags(self, file_id: int, user_id: int, tags: List[str]) -> dict:
+        with self.SessionLocal() as session:
+            query = session.query(File).filter_by(id=file_id)
+            file = File.accessible_by(query, user_id).first()
+            if not file:
+                raise ValueError(f"File with ID '{file_id}' not found.")
+            file.tags = tags
+            session.commit()
+            session.refresh(file)
+            return file.to_dict()
 
     def set_storage_status(self, path: str, in_storage: bool):
         with self.SessionLocal() as session:

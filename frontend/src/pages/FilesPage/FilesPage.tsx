@@ -6,6 +6,7 @@ import { FileTag } from "../../components/FileTag/FileTag.tsx";
 import { FileViewModal } from "../../components/FileViewModal/FileViewModal.tsx";
 import { ReaderTestModal } from "../../components/ReaderTestModal/ReaderTestModal.tsx";
 import { AddFileModal } from "../../components/AddFileModal/AddFileModal.tsx";
+import { EditTagsModal } from "../../components/EditTagsModal/EditTagsModal.tsx";
 import { Modal } from "../../components/Modal/Modal.tsx";
 import { PageHeader } from "../../components/PageHeader/PageHeader.tsx";
 import styles from "./FilesPage.module.css";
@@ -26,6 +27,15 @@ function IconBeaker() {
             <path d="M9 3h6"/>
             <path d="M10 3v6L4.5 18.5A2 2 0 0 0 6.2 21.5h11.6a2 2 0 0 0 1.7-3L14 9V3"/>
             <path d="M7 14h10"/>
+        </svg>
+    );
+}
+
+function IconTag() {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.59 13.41L13.42 20.59a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+            <line x1="7" y1="7" x2="7.01" y2="7"/>
         </svg>
     );
 }
@@ -84,6 +94,7 @@ export default function FilesPage() {
     const [viewing, setViewing] = useState<FileData | null>(null);
     const [testing, setTesting] = useState<FileData | null>(null);
     const [deleting, setDeleting] = useState<FileData | null>(null);
+    const [editingTags, setEditingTags] = useState<FileData | null>(null);
 
     function loadFiles() {
         FilesAPI.getAll().then(setFiles);
@@ -107,6 +118,10 @@ export default function FilesPage() {
 
     function handleDelete(id: number) {
         FilesAPI.delete(id).then(() => setFiles(prev => prev.filter(f => f.id !== id)));
+    }
+
+    function handleTagsSaved(updated: FileData) {
+        setFiles(prev => prev.map(f => f.id === updated.id ? updated : f));
     }
 
     return (
@@ -179,6 +194,9 @@ export default function FilesPage() {
                             <button className={styles.iconBtn} title="Test file reader" onClick={() => setTesting(f)}>
                                 <IconBeaker />
                             </button>
+                            <button className={styles.iconBtn} title="Edit tags" onClick={() => setEditingTags(f)}>
+                                <IconTag />
+                            </button>
                             <button
                                 className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                                 title="Delete file"
@@ -203,9 +221,19 @@ export default function FilesPage() {
                 onUploaded={() => loadFiles()}
             />
 
-            <FileViewModal file={viewing} onClose={() => setViewing(null)} />
+            <FileViewModal
+                file={viewing}
+                onClose={() => setViewing(null)}
+                onEditTags={(f) => { setViewing(null); setEditingTags(f); }}
+            />
             <ReaderTestModal file={testing} onClose={() => setTesting(null)} />
             <ConfirmDeleteModal file={deleting} onClose={() => setDeleting(null)} onConfirm={handleDelete} />
+            <EditTagsModal
+                key={editingTags?.id ?? "none"}
+                file={editingTags}
+                onClose={() => setEditingTags(null)}
+                onSaved={handleTagsSaved}
+            />
         </section>
     );
 }
