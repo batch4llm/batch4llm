@@ -9,7 +9,7 @@ down: ## Stop the dev stack
 	$(COMPOSE) down
 
 test: ## Run backend tests
-	cd backend && pytest
+	pytest --config-file=backend/pyproject.toml
 
 lint: ## Check backend and frontend linting
 	ruff check backend/src
