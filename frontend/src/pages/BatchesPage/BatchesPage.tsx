@@ -48,8 +48,8 @@ function matchSearch(batch: Batch, q: string): boolean {
         batch.name.toLowerCase().includes(lower) ||
         String(batch.id).includes(lower) ||
         batch.model.toLowerCase().includes(lower) ||
-        (batch.endpoint_name ?? String(batch.endpoint_id)).toLowerCase().includes(lower) ||
-        (batch.prompt_name ?? String(batch.prompt_id)).toLowerCase().includes(lower)
+        (batch.endpoint_name ?? String(batch.endpoint_id ?? "")).toLowerCase().includes(lower) ||
+        (batch.prompt_name ?? String(batch.prompt_id ?? "")).toLowerCase().includes(lower)
     );
 }
 
@@ -97,13 +97,25 @@ function BatchCard({ batch, onDetails, onLog, onExport, onStop, onArchive, onEnd
                 <span className={styles.sep}>·</span>
                 <span>{batch.model}</span>
                 <span className={styles.sep}>·</span>
-                <button className={styles.metaLink} onClick={stop(onEndpoint)} title="View endpoint">
-                    {batch.endpoint_name ?? `endpoint #${batch.endpoint_id}`}
-                </button>
+                {batch.endpoint_id != null ? (
+                    <button className={styles.metaLink} onClick={stop(onEndpoint)} title="View endpoint">
+                        {batch.endpoint_name ?? `endpoint #${batch.endpoint_id}`}
+                    </button>
+                ) : (
+                    <span className={styles.metaLinkDeleted} title="Endpoint was deleted">
+                        {batch.endpoint_name ?? "endpoint deleted"}
+                    </span>
+                )}
                 <span className={styles.sep}>·</span>
-                <button className={styles.metaLink} onClick={stop(onPrompt)} title="View prompt">
-                    {batch.prompt_name ?? `prompt #${batch.prompt_id}`}
-                </button>
+                {batch.prompt_id != null ? (
+                    <button className={styles.metaLink} onClick={stop(onPrompt)} title="View prompt">
+                        {batch.prompt_name ?? `prompt #${batch.prompt_id}`}
+                    </button>
+                ) : (
+                    <span className={styles.metaLinkDeleted} title="Prompt was deleted">
+                        {batch.prompt_name ?? "prompt deleted"}
+                    </span>
+                )}
             </div>
 
             {/* ── Stats row ──────────────────────────────────────── */}

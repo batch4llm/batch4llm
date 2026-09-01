@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from batch4llm.core.exceptions import NameAlreadyExistsError, ResourceInUseError
 from batch4llm.manager.database.models.batch import Batch
+from batch4llm.manager.database.models.batch_task import BatchTask
 from batch4llm.manager.database.models.endpoint import Endpoint
 from batch4llm.manager.database.ops.user_ops import get_group_id_subquery
 
@@ -80,11 +81,24 @@ class EndpointOps:
 
             if not ep:
                 raise ValueError(f"Endpoint ID '{endpoint_id}' not found.")
-            in_use = session.query(Batch).filter_by(endpoint_id=endpoint_id).first()
+            in_use = (
+                session.query(Batch)
+                .filter(
+                    Batch.endpoint_id == endpoint_id,
+                    Batch.status.in_(Batch.ACTIVE_STATUSES),
+                )
+                .first()
+            )
             if in_use:
                 raise ResourceInUseError(
-                    f"Endpoint '{endpoint_id}' is still referenced by a batch and cannot be deleted."
+                    f"Endpoint '{endpoint_id}' is still used by an active batch and cannot be deleted."
                 )
+            session.query(Batch).filter_by(endpoint_id=endpoint_id).update(
+                {"endpoint_id": None}
+            )
+            session.query(BatchTask).filter_by(endpoint_id=endpoint_id).update(
+                {"endpoint_id": None}
+            )
             session.delete(ep)
             session.commit()
             return ep.to_dict_public()

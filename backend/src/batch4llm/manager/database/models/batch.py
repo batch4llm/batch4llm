@@ -32,8 +32,14 @@ class Batch(Base, ResourceMixin):
         Enum(BatchStatus, name="batch_status_enum"), nullable=False
     )
 
-    endpoint_id: Mapped[int] = mapped_column(ForeignKey("endpoints.id"), nullable=False)
-    prompt_id: Mapped[int] = mapped_column(ForeignKey("prompts.id"), nullable=False)
+    endpoint_id: Mapped[int | None] = mapped_column(
+        ForeignKey("endpoints.id", ondelete="SET NULL"), nullable=True
+    )
+    endpoint_name: Mapped[str | None] = mapped_column(nullable=True)
+    prompt_id: Mapped[int | None] = mapped_column(
+        ForeignKey("prompts.id", ondelete="SET NULL"), nullable=True
+    )
+    prompt_name: Mapped[str | None] = mapped_column(nullable=True)
     file_reader: Mapped[str] = mapped_column(nullable=False)
     model: Mapped[str] = mapped_column(nullable=False)
     temperature: Mapped[float] = mapped_column(nullable=False)

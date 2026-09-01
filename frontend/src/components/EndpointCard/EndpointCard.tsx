@@ -9,6 +9,17 @@ function maskToken(t: string): string | null {
     return `${t.slice(0, 2)}••••••••${t.slice(-2)}`;
 }
 
+function IconTrash() {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h18"/>
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+        </svg>
+    );
+}
+
 const PULSE_CLASSES: Record<string, string> = {
     ok:   styles.pulseOk,
     down: styles.pulseDown,
@@ -17,9 +28,10 @@ const PULSE_CLASSES: Record<string, string> = {
 
 type Props = {
     endpoint: Endpoint;
+    onDelete?: (endpoint: Endpoint) => void;
 };
 
-export function EndpointCard({ endpoint }: Props) {
+export function EndpointCard({ endpoint, onDelete }: Props) {
     const status =
         endpoint.is_healthy === true  ? "ok"
       : endpoint.is_healthy === false ? "down"
@@ -71,6 +83,18 @@ export function EndpointCard({ endpoint }: Props) {
                     </dd>
                 </div>
             </dl>
+
+            {onDelete && (
+                <div className={styles.actions}>
+                    <button
+                        className={styles.deleteBtn}
+                        title="Delete endpoint"
+                        onClick={() => onDelete(endpoint)}
+                    >
+                        <IconTrash />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

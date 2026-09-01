@@ -5,15 +5,50 @@ import { AddEndpointModal } from "../../components/AddEndpointModal/AddEndpointM
 import { PageHeader } from "../../components/PageHeader/PageHeader.tsx";
 import { EndpointCard } from "../../components/EndpointCard/EndpointCard.tsx";
 import { AddCard } from "../../components/AddCard/AddCard.tsx";
+import { Modal } from "../../components/Modal/Modal.tsx";
 import styles from "./EndpointsPage.module.css";
+
+// ── Confirm Delete Modal ────────────────────────────────────────
+type DeleteModalProps = {
+    endpoint: Endpoint | null;
+    onClose: () => void;
+    onConfirm: (id: number) => void;
+};
+
+function ConfirmDeleteModal({ endpoint, onClose, onConfirm }: DeleteModalProps) {
+    if (!endpoint) return null;
+    return (
+        <Modal isOpen onClose={onClose} className={styles.narrowModal}>
+            <h3 className={styles.confirmTitle}>Delete endpoint?</h3>
+            <p className={styles.confirmBody}>
+                <strong>{endpoint.name}</strong> will be permanently removed. Batches that
+                already used it keep showing its name, but this cannot be undone.
+            </p>
+            <div className={styles.confirmActions}>
+                <button className={styles.btnSecondary} onClick={onClose}>Cancel</button>
+                <button className={styles.btnDanger} onClick={() => { onConfirm(endpoint.id); onClose(); }}>Delete</button>
+            </div>
+        </Modal>
+    );
+}
 
 export default function EndpointsPage() {
     const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [deleting, setDeleting] = useState<Endpoint | null>(null);
 
     useEffect(() => {
         EndpointsAPI.getAll().then(setEndpoints);
     }, []);
+
+    function handleDelete(id: number) {
+        EndpointsAPI.delete(id)
+            .then(() => setEndpoints(prev => prev.filter(ep => ep.id !== id)))
+            .catch((err) => {
+                const detail = err?.response?.data?.detail;
+                alert(detail || "Endpoint could not be deleted.");
+            });
+    }
 
     return (
         <section>
@@ -27,7 +62,7 @@ export default function EndpointsPage() {
 
             <div className={styles.grid}>
                 {endpoints.map(ep => (
-                    <EndpointCard key={ep.id} endpoint={ep} />
+                    <EndpointCard key={ep.id} endpoint={ep} onDelete={setDeleting} />
                 ))}
                 <AddCard label="Add Endpoint" onClick={() => setIsModalOpen(true)} />
             </div>
@@ -38,6 +73,12 @@ export default function EndpointsPage() {
                 onCreated={(newEndpoint: Endpoint) =>
                     setEndpoints(prev => [...prev, newEndpoint])
                 }
+            />
+
+            <ConfirmDeleteModal
+                endpoint={deleting}
+                onClose={() => setDeleting(null)}
+                onConfirm={handleDelete}
             />
         </section>
     );

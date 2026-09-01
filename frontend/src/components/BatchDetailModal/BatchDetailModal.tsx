@@ -179,11 +179,15 @@ export function BatchDetailModal({ isOpen, onClose, batch }: Props) {
                                 </span>
                                 <span className={styles.chip}>
                                     <span className={styles.chipKey}>Endpoint</span>
-                                    <span className={styles.chipVal}>{batch.endpoint_name ?? `#${batch.endpoint_id}`}</span>
+                                    <span className={styles.chipVal}>
+                                        {batch.endpoint_name ?? (batch.endpoint_id != null ? `#${batch.endpoint_id}` : "deleted")}
+                                    </span>
                                 </span>
                                 <span className={styles.chip}>
                                     <span className={styles.chipKey}>Prompt</span>
-                                    <span className={styles.chipVal}>{batch.prompt_name ?? `#${batch.prompt_id}`}</span>
+                                    <span className={styles.chipVal}>
+                                        {batch.prompt_name ?? (batch.prompt_id != null ? `#${batch.prompt_id}` : "deleted")}
+                                    </span>
                                 </span>
                             </div>
                             <div className={styles.stats}>

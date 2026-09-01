@@ -117,7 +117,12 @@ export default function FilesPage() {
     const totalSize = filtered.reduce((acc, f) => acc + (f.size ?? 0), 0);
 
     function handleDelete(id: number) {
-        FilesAPI.delete(id).then(() => setFiles(prev => prev.filter(f => f.id !== id)));
+        FilesAPI.delete(id)
+            .then(() => setFiles(prev => prev.filter(f => f.id !== id)))
+            .catch((err) => {
+                const detail = err?.response?.data?.detail;
+                alert(detail || "File could not be deleted.");
+            });
     }
 
     function handleTagsSaved(updated: FileData) {

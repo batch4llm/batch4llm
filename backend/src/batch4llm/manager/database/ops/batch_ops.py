@@ -53,11 +53,18 @@ class BatchOps:
         with self.SessionLocal() as session:
             subq = get_group_id_subquery(session, user_id)
 
+            endpoint_name = (
+                session.query(Endpoint.name).filter_by(id=endpoint_id).scalar()
+            )
+            prompt_name = session.query(Prompt.name).filter_by(id=prompt_id).scalar()
+
             batch = Batch(
                 name=name,
                 status=status,
                 endpoint_id=endpoint_id,
+                endpoint_name=endpoint_name,
                 prompt_id=prompt_id,
+                prompt_name=prompt_name,
                 file_reader=file_reader,
                 model=model,
                 temperature=temperature,
@@ -444,17 +451,10 @@ class BatchOps:
         with self.SessionLocal() as session:
             query = Batch.accessible_by(session.query(Batch), user_id)
             query = Batch.filter_archived(query, archived)
-            batches = (
-                query.outerjoin(Prompt, Batch.prompt_id == Prompt.id)
-                .outerjoin(Endpoint, Batch.endpoint_id == Endpoint.id)
-                .add_columns(
-                    Prompt.name.label("prompt_name"),
-                    Endpoint.name.label("endpoint_name"),
-                )
-                .all()
-            )
+            batches = query.all()
+
             result = []
-            for batch, prompt_name, endpoint_name in batches:
+            for batch in batches:
                 batch_dict = batch.to_dict()
 
                 total_files = len(batch.batch_files)
@@ -464,8 +464,6 @@ class BatchOps:
                 )
 
                 batch_dict["progress"] = f"{processed_files}/{total_files}"
-                batch_dict["prompt_name"] = prompt_name
-                batch_dict["endpoint_name"] = endpoint_name
                 result.append(batch_dict)
             return result
 

@@ -19,9 +19,9 @@ export interface Batch {
     name: string;
     status: BatchStatus;
     progress?: string;
-    prompt_id: number;
+    prompt_id: number | null;
     prompt_name?: string;
-    endpoint_id: number;
+    endpoint_id: number | null;
     endpoint_name?: string;
     files: number[];
     file_reader: string;

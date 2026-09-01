@@ -245,6 +245,11 @@
     transition: color var(--transition-fast);
 }
 .metaLink:hover { color: var(--color-click); }
+.metaLinkDeleted {
+    color: var(--text-muted);
+    font-style: italic;
+    opacity: 0.7;
+}
 
 /* ─── Stats row ───────────────────────────────────────────────────────────── */
 .stats {

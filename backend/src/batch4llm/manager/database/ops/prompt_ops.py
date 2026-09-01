@@ -62,11 +62,21 @@ class PromptOps:
             prompt = Prompt.accessible_by(query, user_id).first()
             if not prompt:
                 raise ValueError(f"Prompt with ID {prompt_id} not found.")
-            in_use = session.query(Batch).filter_by(prompt_id=prompt_id).first()
+            in_use = (
+                session.query(Batch)
+                .filter(
+                    Batch.prompt_id == prompt_id,
+                    Batch.status.in_(Batch.ACTIVE_STATUSES),
+                )
+                .first()
+            )
             if in_use:
                 raise ResourceInUseError(
-                    f"Prompt '{prompt_id}' is still referenced by a batch and cannot be deleted."
+                    f"Prompt '{prompt_id}' is still used by an active batch and cannot be deleted."
                 )
+            session.query(Batch).filter_by(prompt_id=prompt_id).update(
+                {"prompt_id": None}
+            )
             session.delete(prompt)
             session.commit()
             return prompt.to_dict()

@@ -38,9 +38,9 @@ class BatchData(BaseModel):
     id: int
     name: str
     status: str
-    prompt_id: int
+    prompt_id: Optional[int] = None
     prompt_name: Optional[str] = None
-    endpoint_id: int
+    endpoint_id: Optional[int] = None
     endpoint_name: Optional[str] = None
     progress: Optional[str] = None
     file_reader: str
