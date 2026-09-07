@@ -11,6 +11,9 @@ down: ## Stop the dev stack
 test: ## Run backend tests
 	pytest --config-file=backend/pyproject.toml
 
+test-real-api: ## Run tests against real LLM provider APIs (needs backend/tests/integration/.env, costs money)
+	pytest backend/tests/integration -m real_api -v --config-file=backend/pyproject.toml
+
 lint: ## Check backend and frontend linting
 	ruff check backend/src
 	black --check backend/src

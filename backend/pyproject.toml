@@ -31,11 +31,15 @@ dev = [
     "ruff",
     "pre-commit",
     "celery-types",
+    "python-dotenv",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+markers = [
+    "real_api: hits real LLM provider APIs, costs money, skipped when the required API key is not set",
+]
 
 [tool.black]
 line-length = 88
