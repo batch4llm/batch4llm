@@ -1,7 +1,6 @@
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
-from batch4llm.core.exceptions import NameAlreadyExistsError, ResourceInUseError
+from batch4llm.core.exceptions import ResourceInUseError
 from batch4llm.manager.database.models.batch import Batch
 from batch4llm.manager.database.models.batch_task import BatchTask
 from batch4llm.manager.database.models.endpoint import Endpoint
@@ -27,11 +26,7 @@ class EndpointOps:
                 group_id=subq,
             )
             session.add(ep)
-            try:
-                session.commit()
-            except IntegrityError:
-                session.rollback()
-                raise NameAlreadyExistsError(name)
+            session.commit()
             return ep.to_dict_public()
 
     def get(self, endpoint_id: int, user_id: int, show_api=False):

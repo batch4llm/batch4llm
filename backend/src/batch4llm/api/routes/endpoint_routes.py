@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Security
 
 from batch4llm.api.models.endpoint_models import EndpointRequest, EndpointResponse
-from batch4llm.core.exceptions import NameAlreadyExistsError, ResourceInUseError
+from batch4llm.core.exceptions import ResourceInUseError
 from batch4llm.service.endpoint_service import EndpointService
 from batch4llm.service.jwt_authenticator import JWTAuthenticator
 
@@ -13,12 +13,9 @@ def build_endpoint_router(
 
     @router.post("/add", response_model=EndpointResponse)
     def add_endpoint(ep: EndpointRequest, user=Security(jwt_authenticator)):
-        try:
-            return endpoint_service.add(
-                ep.name, ep.client, ep.provider, user["id"], ep.url, ep.token
-            )
-        except NameAlreadyExistsError as e:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+        return endpoint_service.add(
+            ep.name, ep.client, ep.provider, user["id"], ep.url, ep.token
+        )
 
     @router.post("/test")
     def test_endpoint(ep: EndpointRequest, user=Security(jwt_authenticator)):

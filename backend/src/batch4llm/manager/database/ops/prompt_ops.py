@@ -1,7 +1,6 @@
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
-from batch4llm.core.exceptions import NameAlreadyExistsError, ResourceInUseError
+from batch4llm.core.exceptions import ResourceInUseError
 from batch4llm.manager.database.models.batch import Batch
 from batch4llm.manager.database.models.prompt import Prompt
 from batch4llm.manager.database.ops.user_ops import get_group_id_subquery
@@ -23,13 +22,9 @@ class PromptOps:
                 group_id=subq,
             )
             session.add(pr)
-            try:
-                session.commit()
-                session.refresh(pr)
-                return pr.to_dict()
-            except IntegrityError:
-                session.rollback()
-                raise NameAlreadyExistsError(name)
+            session.commit()
+            session.refresh(pr)
+            return pr.to_dict()
 
     def list(self, user_id: int, archived: bool | None = None) -> list[dict]:
         with self.SessionLocal() as session:

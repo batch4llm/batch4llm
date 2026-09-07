@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Security
 from starlette import status
 
 from batch4llm.api.models.prompt_models import PromptData, PromptRequest
-from batch4llm.core.exceptions import NameAlreadyExistsError, ResourceInUseError
+from batch4llm.core.exceptions import ResourceInUseError
 from batch4llm.service.jwt_authenticator import JWTAuthenticator
 from batch4llm.service.prompt_service import PromptService
 
@@ -14,15 +14,12 @@ def build_prompt_router(
 
     @router.post("/add")
     def add_prompt(prompt: PromptRequest, user=Security(jwt_authenticator)):
-        try:
-            return prompt_service.add(
-                name=prompt.name,
-                content=prompt.content,
-                multi_prompt=prompt.multi_prompt,
-                user_id=user["id"],
-            )
-        except NameAlreadyExistsError as e:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+        return prompt_service.add(
+            name=prompt.name,
+            content=prompt.content,
+            multi_prompt=prompt.multi_prompt,
+            user_id=user["id"],
+        )
 
     @router.get("/", response_model=list[PromptData])
     def list_prompts(archived: bool | None = None, user=Security(jwt_authenticator)):

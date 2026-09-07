@@ -8,7 +8,7 @@ class Prompt(Base, ResourceMixin):
     __tablename__ = "prompts"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(nullable=False)
     content: Mapped[str] = mapped_column(nullable=False)
     multi_prompt: Mapped[bool] = mapped_column(nullable=False, default=False)
 
