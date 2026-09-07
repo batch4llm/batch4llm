@@ -9,6 +9,7 @@ PyMuPDF
 openpyxl
 pandas
 sqlalchemy
+alembic
 tiktoken
 ollama
 python-jose[cryptography]

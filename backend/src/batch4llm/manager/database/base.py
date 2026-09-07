@@ -64,5 +64,4 @@ def get_session(db_path: str):
     _guard_against_forked_connections(engine)
     _ENGINES.append(engine)
 
-    Base.metadata.create_all(engine)
     return sessionmaker(bind=engine, expire_on_commit=False)
