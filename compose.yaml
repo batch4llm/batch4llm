@@ -10,9 +10,11 @@ x-worker-env: &worker-env
 services:
   migrate:
     image: ghcr.io/batch4llm/backend:latest
-    command: b4llm db upgrade
+    command: sh -c "b4llm db upgrade && b4llm user ensure-admin"
     environment:
       <<: *worker-env
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     depends_on:
       db:
         condition: service_healthy

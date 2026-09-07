@@ -30,6 +30,15 @@ This is recommended for production.
    docker compose up -d
 ```
 
+### Admin account
+
+Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` in your `.env` (see `.env.example`) before the first `docker compose up` to have an admin account created automatically. This only happens once — an existing account with that username is never modified on later restarts.
+
+If you skip this, create the first admin manually instead:
+```
+   docker compose exec backend b4llm user create <username> <password> --admin
+```
+
 ### HTTPS
 
 By default, Traefik only serves plain HTTP on port 80. To enable HTTPS via Let's Encrypt, set `DOMAIN` and `ACME_EMAIL` in your `.env` (see `.env.example`) and start with the `compose.prod.yaml` override:

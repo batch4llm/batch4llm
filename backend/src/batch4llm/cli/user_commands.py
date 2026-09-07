@@ -1,3 +1,4 @@
+import os
 import typer
 from typing import Annotated
 
@@ -37,6 +38,38 @@ def list_users():
         admin_flag = " [admin]" if u.get("is_admin") else ""
         group = f"  group={u['group_id']}" if u.get("group_id") else ""
         typer.echo(f"{u['username']}{admin_flag}{group}")
+
+
+@user_app.command(name="ensure-admin")
+def ensure_admin():
+    """Create a bootstrap admin from ADMIN_USERNAME/ADMIN_PASSWORD env vars.
+
+    No-op if both are unset, or if a user with that username already exists
+    (existing accounts, including their passwords, are never modified)."""
+    username = os.environ.get("ADMIN_USERNAME")
+    password = os.environ.get("ADMIN_PASSWORD")
+
+    if not username and not password:
+        typer.echo("ADMIN_USERNAME/ADMIN_PASSWORD not set, skipping admin bootstrap.")
+        return
+    if not username or not password:
+        typer.echo(
+            "Error: ADMIN_USERNAME and ADMIN_PASSWORD must both be set to bootstrap "
+            "an admin account.",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    try:
+        created = get_login_service().ensure_bootstrap_admin(username, password)
+    except ValueError as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+    if created:
+        typer.echo(f"Created admin '{username}'.")
+    else:
+        typer.echo(f"Admin '{username}' already exists, skipping bootstrap.")
 
 
 @user_app.command()
