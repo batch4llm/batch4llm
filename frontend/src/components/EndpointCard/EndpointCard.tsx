@@ -28,10 +28,11 @@ const PULSE_CLASSES: Record<string, string> = {
 
 type Props = {
     endpoint: Endpoint;
+    onView?: (endpoint: Endpoint) => void;
     onDelete?: (endpoint: Endpoint) => void;
 };
 
-export function EndpointCard({ endpoint, onDelete }: Props) {
+export function EndpointCard({ endpoint, onView, onDelete }: Props) {
     const status =
         endpoint.is_healthy === true  ? "ok"
       : endpoint.is_healthy === false ? "down"
@@ -43,7 +44,13 @@ export function EndpointCard({ endpoint, onDelete }: Props) {
         : null;
 
     return (
-        <div className={styles.card}>
+        <div
+            className={styles.card}
+            role={onView ? "button" : undefined}
+            tabIndex={onView ? 0 : undefined}
+            onClick={() => onView?.(endpoint)}
+            onKeyDown={e => onView && (e.key === "Enter" || e.key === " ") && onView(endpoint)}
+        >
             <span
                 className={`${styles.pulse} ${pulseClass}`}
                 title={
@@ -89,7 +96,7 @@ export function EndpointCard({ endpoint, onDelete }: Props) {
                     <button
                         className={styles.deleteBtn}
                         title="Delete endpoint"
-                        onClick={() => onDelete(endpoint)}
+                        onClick={(e) => { e.stopPropagation(); onDelete(endpoint); }}
                     >
                         <IconTrash />
                     </button>

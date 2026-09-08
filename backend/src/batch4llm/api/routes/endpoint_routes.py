@@ -1,6 +1,10 @@
 from fastapi import APIRouter, HTTPException, status, Security
 
-from batch4llm.api.models.endpoint_models import EndpointRequest, EndpointResponse
+from batch4llm.api.models.endpoint_models import (
+    EndpointRequest,
+    EndpointResponse,
+    EndpointUpdateRequest,
+)
 from batch4llm.core.exceptions import ResourceInUseError
 from batch4llm.service.endpoint_service import EndpointService
 from batch4llm.service.jwt_authenticator import JWTAuthenticator
@@ -36,6 +40,17 @@ def build_endpoint_router(
     @router.get("/", response_model=list[EndpointResponse])
     def list_endpoints(archived: bool | None = None, user=Security(jwt_authenticator)):
         return endpoint_service.list(user["id"], archived)
+
+    @router.patch("/{endpoint_id}", response_model=EndpointResponse)
+    def update_endpoint(
+        endpoint_id: int, ep: EndpointUpdateRequest, user=Security(jwt_authenticator)
+    ):
+        try:
+            return endpoint_service.update(
+                endpoint_id, user["id"], **ep.model_dump(exclude_unset=True)
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
     @router.get("/health/{endpoint_id}", response_model=bool)
     def get_endpoint_health(endpoint_id: int, user=Security(jwt_authenticator)):

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { BatchesAPI } from "../../api/batches.ts";
 import { PromptsAPI } from "../../api/prompts.ts";
+import { EndpointsAPI } from "../../api/endpoints.ts";
 import { type Batch, type BatchStatus, ACTIVE_STATUSES } from "../../types/Batch.ts";
 import { type Prompt } from "../../types/Prompt.ts";
+import { type Endpoint } from "../../types/Endpoint.ts";
 import { PageHeader } from "../../components/PageHeader/PageHeader.tsx";
 import { StartBatchModal } from "../../components/StartBatchModal/StartBatchModal.tsx";
 import { BatchLogModal } from "../../components/BatchLogModal/BatchLogModal.tsx";
@@ -193,6 +195,7 @@ function SectionHead({ title, hint, count }: { title: string; hint?: string; cou
 export default function BatchesPage() {
     const [batches, setBatches] = useState<Batch[]>([]);
     const [prompts, setPrompts] = useState<Prompt[]>([]);
+    const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
     const [tab, setTab] = useState<Tab>("batches");
     const [query, setQuery] = useState("");
 
@@ -204,10 +207,11 @@ export default function BatchesPage() {
     const [exportBatchId, setExportBatchId] = useState<number | null>(null);
     const [clonePrompt, setClonePrompt] = useState<Prompt | null>(null);
 
-    // ── Load all batches & prompts ────────────────────────────────────────────
+    // ── Load all batches, prompts & endpoints ─────────────────────────────────
     useEffect(() => {
         BatchesAPI.getAll().then(setBatches);
         PromptsAPI.getAll().then(setPrompts);
+        EndpointsAPI.getAll().then(setEndpoints);
     }, []);
 
     // ── Auto-refresh while any batch is active ────────────────────────────────
@@ -264,13 +268,15 @@ export default function BatchesPage() {
         onPrompt:   (b: Batch) => setPromptBatchId(b.id),
     };
 
-    const logBatch      = batches.find(b => b.id === logBatchId)      ?? null;
-    const detailBatch   = batches.find(b => b.id === detailBatchId)   ?? null;
-    const endpointBatch = batches.find(b => b.id === endpointBatchId) ?? null;
-    const exportBatch   = batches.find(b => b.id === exportBatchId)   ?? null;
+    const logBatch    = batches.find(b => b.id === logBatchId)    ?? null;
+    const detailBatch = batches.find(b => b.id === detailBatchId) ?? null;
+    const exportBatch = batches.find(b => b.id === exportBatchId) ?? null;
 
     const promptForBatch = batches.find(b => b.id === promptBatchId) ?? null;
     const viewedPrompt   = promptForBatch ? prompts.find(p => p.id === promptForBatch.prompt_id) ?? null : null;
+
+    const endpointForBatch = batches.find(b => b.id === endpointBatchId) ?? null;
+    const viewedEndpoint   = endpointForBatch ? endpoints.find(e => e.id === endpointForBatch.endpoint_id) ?? null : null;
 
     function handleEditClonePrompt(prompt: Prompt) {
         setPromptBatchId(null);
@@ -391,12 +397,13 @@ export default function BatchesPage() {
                 />
             )}
 
-            {endpointBatch && (
-                <EndpointModal
-                    isOpen={!!endpointBatchId}
-                    onClose={() => setEndpointBatchId(null)}
-                />
-            )}
+            <EndpointModal
+                endpoint={viewedEndpoint}
+                onClose={() => setEndpointBatchId(null)}
+                onUpdated={(updated) =>
+                    setEndpoints(prev => prev.map(ep => ep.id === updated.id ? updated : ep))
+                }
+            />
 
             <PromptModal
                 prompt={viewedPrompt}

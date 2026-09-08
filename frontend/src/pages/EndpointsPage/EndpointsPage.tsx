@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { EndpointsAPI } from "../../api/endpoints.ts";
 import { type Endpoint } from "../../types/Endpoint.ts";
 import { AddEndpointModal } from "../../components/AddEndpointModal/AddEndpointModal.tsx";
+import { EndpointModal } from "../../components/EndpointModal/EndpointModal.tsx";
 import { PageHeader } from "../../components/PageHeader/PageHeader.tsx";
 import { EndpointCard } from "../../components/EndpointCard/EndpointCard.tsx";
 import { AddCard } from "../../components/AddCard/AddCard.tsx";
@@ -36,6 +37,7 @@ export default function EndpointsPage() {
     const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [deleting, setDeleting] = useState<Endpoint | null>(null);
+    const [viewing, setViewing] = useState<Endpoint | null>(null);
 
     useEffect(() => {
         EndpointsAPI.getAll().then(setEndpoints);
@@ -62,7 +64,7 @@ export default function EndpointsPage() {
 
             <div className={styles.grid}>
                 {endpoints.map(ep => (
-                    <EndpointCard key={ep.id} endpoint={ep} onDelete={setDeleting} />
+                    <EndpointCard key={ep.id} endpoint={ep} onView={setViewing} onDelete={setDeleting} />
                 ))}
                 <AddCard label="Add Endpoint" onClick={() => setIsModalOpen(true)} />
             </div>
@@ -73,6 +75,15 @@ export default function EndpointsPage() {
                 onCreated={(newEndpoint: Endpoint) =>
                     setEndpoints(prev => [...prev, newEndpoint])
                 }
+            />
+
+            <EndpointModal
+                endpoint={viewing}
+                onClose={() => setViewing(null)}
+                onUpdated={(updated) => {
+                    setEndpoints(prev => prev.map(ep => ep.id === updated.id ? updated : ep));
+                    setViewing(updated);
+                }}
             />
 
             <ConfirmDeleteModal
