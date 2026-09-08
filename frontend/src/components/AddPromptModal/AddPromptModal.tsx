@@ -9,14 +9,26 @@ type Props = {
     isOpen: boolean;
     onClose: () => void;
     onCreated: (prompt: Prompt) => void;
+    initial?: { name: string; content: string; multi_prompt: boolean };
 };
 
-export function AddPromptModal({ isOpen, onClose, onCreated }: Props) {
-    const [name, setName] = useState("");
-    const [content, setContent] = useState("");
-    const [isMultiPrompt, setIsMultiPrompt] = useState(false);
+export function AddPromptModal({ isOpen, onClose, onCreated, initial }: Props) {
+    const [name, setName] = useState(initial?.name ?? "");
+    const [content, setContent] = useState(initial?.content ?? "");
+    const [isMultiPrompt, setIsMultiPrompt] = useState(initial?.multi_prompt ?? false);
 
-
+    // Re-fill the form whenever the modal is (re-)opened, so a new `initial`
+    // (e.g. cloning a different prompt) is picked up without resetting the
+    // fields while the user is still typing in an already-open modal.
+    const [wasOpen, setWasOpen] = useState(isOpen);
+    if (isOpen !== wasOpen) {
+        setWasOpen(isOpen);
+        if (isOpen) {
+            setName(initial?.name ?? "");
+            setContent(initial?.content ?? "");
+            setIsMultiPrompt(initial?.multi_prompt ?? false);
+        }
+    }
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -48,7 +60,7 @@ export function AddPromptModal({ isOpen, onClose, onCreated }: Props) {
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
-            <h3>Add Prompt</h3>
+            <h3>{initial ? "Clone Prompt" : "Add Prompt"}</h3>
 
             <div className={styles.fileUpload}>
                 Upload .txt file

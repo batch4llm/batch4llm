@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { BatchesAPI } from "../../api/batches.ts";
+import { PromptsAPI } from "../../api/prompts.ts";
 import { type Batch, type BatchStatus, ACTIVE_STATUSES } from "../../types/Batch.ts";
+import { type Prompt } from "../../types/Prompt.ts";
 import { PageHeader } from "../../components/PageHeader/PageHeader.tsx";
 import { StartBatchModal } from "../../components/StartBatchModal/StartBatchModal.tsx";
 import { BatchLogModal } from "../../components/BatchLogModal/BatchLogModal.tsx";
@@ -8,6 +10,7 @@ import { BatchTimer } from "../../components/BatchTimer/BatchTimer.tsx";
 import { BatchDetailModal } from "../../components/BatchDetailModal/BatchDetailModal.tsx";
 import { EndpointModal } from "../../components/EndpointModal/EndpointModal.tsx";
 import { PromptModal } from "../../components/PromptModal/PromptModal.tsx";
+import { AddPromptModal } from "../../components/AddPromptModal/AddPromptModal.tsx";
 import { ExportModal } from "../../components/ExportModal/ExportModal.tsx";
 import styles from "./BatchesPage.module.css";
 
@@ -189,6 +192,7 @@ function SectionHead({ title, hint, count }: { title: string; hint?: string; cou
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function BatchesPage() {
     const [batches, setBatches] = useState<Batch[]>([]);
+    const [prompts, setPrompts] = useState<Prompt[]>([]);
     const [tab, setTab] = useState<Tab>("batches");
     const [query, setQuery] = useState("");
 
@@ -198,10 +202,12 @@ export default function BatchesPage() {
     const [endpointBatchId, setEndpointBatchId] = useState<number | null>(null);
     const [promptBatchId, setPromptBatchId] = useState<number | null>(null);
     const [exportBatchId, setExportBatchId] = useState<number | null>(null);
+    const [clonePrompt, setClonePrompt] = useState<Prompt | null>(null);
 
-    // ── Load all batches ──────────────────────────────────────────────────────
+    // ── Load all batches & prompts ────────────────────────────────────────────
     useEffect(() => {
         BatchesAPI.getAll().then(setBatches);
+        PromptsAPI.getAll().then(setPrompts);
     }, []);
 
     // ── Auto-refresh while any batch is active ────────────────────────────────
@@ -261,8 +267,15 @@ export default function BatchesPage() {
     const logBatch      = batches.find(b => b.id === logBatchId)      ?? null;
     const detailBatch   = batches.find(b => b.id === detailBatchId)   ?? null;
     const endpointBatch = batches.find(b => b.id === endpointBatchId) ?? null;
-    const promptBatch   = batches.find(b => b.id === promptBatchId)   ?? null;
     const exportBatch   = batches.find(b => b.id === exportBatchId)   ?? null;
+
+    const promptForBatch = batches.find(b => b.id === promptBatchId) ?? null;
+    const viewedPrompt   = promptForBatch ? prompts.find(p => p.id === promptForBatch.prompt_id) ?? null : null;
+
+    function handleEditClonePrompt(prompt: Prompt) {
+        setPromptBatchId(null);
+        setClonePrompt(prompt);
+    }
 
     const totallyEmpty = filtered.active.length === 0 && filtered.history.length === 0;
 
@@ -385,12 +398,22 @@ export default function BatchesPage() {
                 />
             )}
 
-            {promptBatch && (
-                <PromptModal
-                    isOpen={!!promptBatchId}
-                    onClose={() => setPromptBatchId(null)}
-                />
-            )}
+            <PromptModal
+                prompt={viewedPrompt}
+                onClose={() => setPromptBatchId(null)}
+                onEditClone={handleEditClonePrompt}
+            />
+
+            <AddPromptModal
+                isOpen={!!clonePrompt}
+                onClose={() => setClonePrompt(null)}
+                onCreated={(newPrompt) => setPrompts(prev => [...prev, newPrompt])}
+                initial={clonePrompt ? {
+                    name: `${clonePrompt.name}_copy`,
+                    content: clonePrompt.content,
+                    multi_prompt: clonePrompt.multi_prompt,
+                } : undefined}
+            />
 
             {exportBatch && (
                 <ExportModal
