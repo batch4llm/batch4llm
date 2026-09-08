@@ -97,6 +97,7 @@
   border-bottom: 1px solid #f1f3f5;
   font-size: 13px;
   color: #111827;
+  cursor: pointer;
   transition: background 0.12s ease;
 }
 

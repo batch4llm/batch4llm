@@ -21,10 +21,11 @@ function IconTrash() {
 
 type Props = {
     prompt: Prompt;
+    onView?: (prompt: Prompt) => void;
     onDelete?: (prompt: Prompt) => void;
 };
 
-export function PromptCard({ prompt, onDelete }: Props) {
+export function PromptCard({ prompt, onView, onDelete }: Props) {
     const isMulti = prompt.multi_prompt;
     const stepCount = prompt.step_count;
 
@@ -34,7 +35,13 @@ export function PromptCard({ prompt, onDelete }: Props) {
     }
 
     return (
-        <div className={`${styles.card} ${isMulti ? styles.cardMulti : ""}`}>
+        <div
+            className={`${styles.card} ${isMulti ? styles.cardMulti : ""}`}
+            role={onView ? "button" : undefined}
+            tabIndex={onView ? 0 : undefined}
+            onClick={() => onView?.(prompt)}
+            onKeyDown={e => onView && (e.key === "Enter" || e.key === " ") && onView(prompt)}
+        >
             <div className={styles.head}>
                 <h3 className={styles.name} title={prompt.name}>{prompt.name}</h3>
                 {isMulti && (
@@ -66,7 +73,7 @@ export function PromptCard({ prompt, onDelete }: Props) {
                     <button
                         className={styles.deleteBtn}
                         title="Delete prompt"
-                        onClick={() => onDelete(prompt)}
+                        onClick={(e) => { e.stopPropagation(); onDelete(prompt); }}
                     >
                         <IconTrash />
                     </button>

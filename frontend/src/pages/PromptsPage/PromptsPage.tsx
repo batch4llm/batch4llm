@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { PromptsAPI } from "../../api/prompts.ts";
 import { type Prompt } from "../../types/Prompt.ts";
 import { AddPromptModal } from "../../components/AddPromptModal/AddPromptModal";
+import { PromptModal } from "../../components/PromptModal/PromptModal.tsx";
 import { PageHeader } from "../../components/PageHeader/PageHeader.tsx";
 import { PromptCard } from "../../components/PromptCard/PromptCard.tsx";
 import { AddCard } from "../../components/AddCard/AddCard.tsx";
@@ -36,6 +37,8 @@ export default function PromptsPage() {
     const [prompts, setPrompts] = useState<Prompt[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [deleting, setDeleting] = useState<Prompt | null>(null);
+    const [viewing, setViewing] = useState<Prompt | null>(null);
+    const [clonePrompt, setClonePrompt] = useState<Prompt | null>(null);
 
     useEffect(() => {
         PromptsAPI.getAll().then(setPrompts);
@@ -50,6 +53,11 @@ export default function PromptsPage() {
             });
     }
 
+    function handleEditClone(prompt: Prompt) {
+        setViewing(null);
+        setClonePrompt(prompt);
+    }
+
     return (
         <section>
             <PageHeader
@@ -62,17 +70,28 @@ export default function PromptsPage() {
 
             <div className={styles.grid}>
                 {prompts.map(p => (
-                    <PromptCard key={p.id} prompt={p} onDelete={setDeleting} />
+                    <PromptCard key={p.id} prompt={p} onView={setViewing} onDelete={setDeleting} />
                 ))}
                 <AddCard label="Add Prompt" onClick={() => setIsModalOpen(true)} />
             </div>
 
             <AddPromptModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                isOpen={isModalOpen || !!clonePrompt}
+                onClose={() => { setIsModalOpen(false); setClonePrompt(null); }}
                 onCreated={(newPrompt: Prompt) =>
                     setPrompts(prev => [...prev, newPrompt])
                 }
+                initial={clonePrompt ? {
+                    name: `${clonePrompt.name}_copy`,
+                    content: clonePrompt.content,
+                    multi_prompt: clonePrompt.multi_prompt,
+                } : undefined}
+            />
+
+            <PromptModal
+                prompt={viewing}
+                onClose={() => setViewing(null)}
+                onEditClone={handleEditClone}
             />
 
             <ConfirmDeleteModal

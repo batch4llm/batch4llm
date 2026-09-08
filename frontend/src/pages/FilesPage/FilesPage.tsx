@@ -180,7 +180,14 @@ export default function FilesPage() {
                 )}
 
                 {filtered.map(f => (
-                    <div key={f.id} className={styles.row}>
+                    <div
+                        key={f.id}
+                        className={styles.row}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setViewing(f)}
+                        onKeyDown={e => (e.key === "Enter" || e.key === " ") && setViewing(f)}
+                    >
                         <div className={styles.rowName}>
                             <span className={styles.rowNameText}>{f.name}</span>
                             {f.created_at && (
@@ -192,7 +199,7 @@ export default function FilesPage() {
                         <div className={styles.rowTags}>
                             {(f.tags ?? []).map(t => <FileTag key={t} tag={t} />)}
                         </div>
-                        <div className={styles.rowActions}>
+                        <div className={styles.rowActions} onClick={e => e.stopPropagation()}>
                             <button className={styles.iconBtn} title="View file" onClick={() => setViewing(f)}>
                                 <IconEye />
                             </button>
