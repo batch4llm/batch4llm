@@ -24,6 +24,19 @@ type Props = {
     onEditClone?: (prompt: Prompt) => void;
 };
 
+function handleExport(prompt: Prompt) {
+    const extension = prompt.multi_prompt ? "yaml" : "txt";
+    const blob = new Blob([prompt.content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${prompt.name}.${extension}`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+
 export function PromptModal({ prompt, onClose, onEditClone }: Props) {
     if (!prompt) return null;
 
@@ -58,6 +71,9 @@ export function PromptModal({ prompt, onClose, onEditClone }: Props) {
 
             <div className={styles.actions}>
                 <button className={modalStyles.btnSecondary} onClick={onClose}>Close</button>
+                <button className={modalStyles.btnSecondary} onClick={() => handleExport(prompt)}>
+                    Export
+                </button>
                 {onEditClone && (
                     <button className={styles.btnPrimary} onClick={() => onEditClone(prompt)}>
                         Edit/Clone

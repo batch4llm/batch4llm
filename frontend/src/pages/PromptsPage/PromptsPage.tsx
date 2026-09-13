@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PromptsAPI } from "../../api/prompts.ts";
 import { type Prompt } from "../../types/Prompt.ts";
 import { AddPromptModal } from "../../components/AddPromptModal/AddPromptModal";
@@ -33,12 +33,16 @@ function ConfirmDeleteModal({ prompt, onClose, onConfirm }: DeleteModalProps) {
     );
 }
 
+type ImportData = { name: string; content: string; multi_prompt: boolean };
+
 export default function PromptsPage() {
     const [prompts, setPrompts] = useState<Prompt[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [deleting, setDeleting] = useState<Prompt | null>(null);
     const [viewing, setViewing] = useState<Prompt | null>(null);
     const [clonePrompt, setClonePrompt] = useState<Prompt | null>(null);
+    const [importData, setImportData] = useState<ImportData | null>(null);
+    const importInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         PromptsAPI.getAll().then(setPrompts);
@@ -58,6 +62,21 @@ export default function PromptsPage() {
         setClonePrompt(prompt);
     }
 
+    function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+
+        const isYaml = /\.ya?ml$/i.test(file.name);
+        file.text().then((content) => {
+            setImportData({
+                name: file.name.replace(/\.[^/.]+$/, ""),
+                content,
+                multi_prompt: isYaml,
+            });
+        });
+    }
+
     return (
         <section>
             <PageHeader
@@ -66,6 +85,18 @@ export default function PromptsPage() {
                 count={prompts.length}
                 addLabel="Add Prompt"
                 onAdd={() => setIsModalOpen(true)}
+                secondaryAction={{
+                    label: "Import",
+                    onClick: () => importInputRef.current?.click(),
+                }}
+            />
+
+            <input
+                type="file"
+                accept=".txt,.yaml,.yml,text/plain,application/x-yaml"
+                ref={importInputRef}
+                onChange={handleImportFile}
+                hidden
             />
 
             <div className={styles.grid}>
@@ -76,8 +107,8 @@ export default function PromptsPage() {
             </div>
 
             <AddPromptModal
-                isOpen={isModalOpen || !!clonePrompt}
-                onClose={() => { setIsModalOpen(false); setClonePrompt(null); }}
+                isOpen={isModalOpen || !!clonePrompt || !!importData}
+                onClose={() => { setIsModalOpen(false); setClonePrompt(null); setImportData(null); }}
                 onCreated={(newPrompt: Prompt) =>
                     setPrompts(prev => [...prev, newPrompt])
                 }
@@ -85,7 +116,8 @@ export default function PromptsPage() {
                     name: `${clonePrompt.name}_copy`,
                     content: clonePrompt.content,
                     multi_prompt: clonePrompt.multi_prompt,
-                } : undefined}
+                } : importData ?? undefined}
+                title={importData ? "Import Prompt" : undefined}
             />
 
             <PromptModal

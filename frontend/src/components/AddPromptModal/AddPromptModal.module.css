@@ -1,7 +1,20 @@
+.modal {
+    width: min(94vw, 900px);
+}
+
 .promptForm {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    /* Override the global `form` element selector (index.css), which
+       otherwise caps this form at max-width: 400px and wraps it in its
+       own card (background/padding/shadow) meant for the login form. */
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+    max-width: none;
 }
 
 .promptForm input,
@@ -16,13 +29,7 @@
     padding: 0.5rem 1rem;
 }
 
-.fileUpload {
-    margin-bottom: 0.75rem;
-    font-size: 0.9rem;
-}
-
-.separator {
-    text-align: center;
-    margin: 0.75rem 0;
-    opacity: 0.6;
+.yamlTextarea {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    tab-size: 2;
 }
