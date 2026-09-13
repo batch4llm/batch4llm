@@ -1,5 +1,6 @@
 .modal {
     width: min(94vw, 900px);
+    padding: 0;
 }
 
 .promptForm {
@@ -25,11 +26,93 @@
     resize: vertical;
 }
 
-.promptForm button {
+.promptForm > button[type="submit"] {
     padding: 0.5rem 1rem;
+    align-self: flex-end;
 }
 
 .yamlTextarea {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     tab-size: 2;
 }
+
+/* ── View shell ──────────────────────────────────────────────────────── */
+.view { padding: 28px; box-sizing: border-box; animation: subIn 0.15s ease; }
+@keyframes subIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+
+.viewHeader { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.viewTitle { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; color: #111827; margin: 0 0 4px; flex: 1; }
+.viewSub { font-size: 12.5px; color: #888; margin: 0 0 20px; }
+
+.backBtn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px; background: white; border: 1.5px solid #e5e5e5;
+  border-radius: 7px; font-size: 12px; font-weight: 500; color: #555;
+  cursor: pointer; flex-shrink: 0; transition: background 0.12s, border-color 0.12s;
+}
+.backBtn:hover { background: #f4f4f4; border-color: #c8c8c8; }
+
+/* ── Mode selection cards (Simple/Complex, YAML/Visual) ─────────────── */
+.modeGrid { display: flex; flex-direction: column; gap: 12px; }
+.modeCard {
+  display: block; text-align: left; padding: 18px 18px 20px;
+  background: white; border: 1.5px solid #e5e5e5; border-radius: 12px;
+  cursor: pointer; transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.modeCard:hover { border-color: #1e1e2f; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07); }
+.modeCardTitle {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 6px;
+}
+.modeCardDesc { font-size: 12.5px; color: #888; line-height: 1.5; margin: 0; }
+
+/* ── Complex editors (YAML / Visual) ────────────────────────────────── */
+.errorBox {
+  padding: 8px 12px; background: #fef2f2; border: 1.5px solid #f3c6c6;
+  border-radius: 8px; color: #c53030; font-size: 12.5px; line-height: 1.5;
+}
+
+
+.switchRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.btnGhostSm {
+  padding: 7px 14px; border: 1.5px solid #e5e5e5; background: white; border-radius: 7px;
+  font-size: 12.5px; font-weight: 500; color: #555; cursor: pointer; transition: all 0.15s;
+}
+.btnGhostSm:hover:not(:disabled) { background: #f4f4f4; border-color: #c8c8c8; }
+.btnGhostSm:disabled { color: #ccc; cursor: not-allowed; }
+
+.visualField { display: flex; flex-direction: column; gap: 4px; }
+.visualFieldLabel { font-size: 12px; font-weight: 500; color: #666; }
+.visualFieldLabel span { font-weight: 400; color: #aaa; margin-left: 4px; }
+
+.stepList { display: flex; flex-direction: column; gap: 10px; }
+.stepRow {
+  border: 1.5px solid #e5e5e5; border-radius: 10px; padding: 12px;
+  display: flex; flex-direction: column; gap: 8px; background: #fafafa;
+}
+.stepRowHeader { display: flex; align-items: center; gap: 8px; }
+.stepRowIndex { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #aaa; flex-shrink: 0; }
+.stepIdInput {
+  flex: 1; padding: 5px 8px !important; font-size: 12.5px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  border: 1.5px solid #e0e0e0; border-radius: 6px; background: white;
+}
+.stepRemoveBtn {
+  width: 24px; height: 24px; flex-shrink: 0; border-radius: 6px; border: 1.5px solid #e5e5e5;
+  background: white; color: #999; font-size: 15px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 0 !important;
+  transition: all 0.15s;
+}
+.stepRemoveBtn:hover:not(:disabled) { background: #fdecec; border-color: #f3c6c6; color: #c53030; }
+.stepRemoveBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.stepRow textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+  font-size: 12.5px !important;
+}
+
+.addStepBtn {
+  align-self: flex-start; padding: 6px 12px !important; background: white; color: #1e1e2f;
+  border: 1.5px dashed #d8d8d8; border-radius: 7px; font-size: 12.5px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+}
+.addStepBtn:hover { border-color: #1e1e2f; background: rgba(30, 30, 47, 0.03); }
