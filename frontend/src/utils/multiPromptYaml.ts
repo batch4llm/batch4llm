@@ -1,4 +1,4 @@
-import yaml from "js-yaml";
+import { dump, load } from "js-yaml";
 
 export type PromptTask = {
     id: string;
@@ -17,7 +17,7 @@ export function structuredToYaml({ pre, post, tasks }: MultiPromptStructured): s
     if (post.trim()) doc.post = post;
     doc.tasks = tasks.map(t => ({ id: t.id, prompt: t.prompt }));
 
-    return yaml.dump({ multi_prompt_v1: doc }, { lineWidth: -1 });
+    return dump({ multi_prompt_v1: doc }, { lineWidth: -1 });
 }
 
 // Only succeeds for YAML that maps onto the visual editor's schema exactly -
@@ -26,7 +26,7 @@ export function structuredToYaml({ pre, post, tasks }: MultiPromptStructured): s
 export function yamlToStructured(content: string): MultiPromptStructured | null {
     let data: unknown;
     try {
-        data = yaml.load(content);
+        data = load(content);
     } catch {
         return null;
     }
@@ -72,7 +72,7 @@ export function validateMultiPromptContent(content: string): string | null {
 
     let data: unknown;
     try {
-        data = yaml.load(content);
+        data = load(content);
     } catch {
         return "The prompt format is not valid YAML.";
     }
