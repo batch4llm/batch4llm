@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
-from sqlalchemy import func, and_, select
+from datetime import datetime
+from sqlalchemy import func, select
 from sqlalchemy.orm import sessionmaker, selectinload, aliased
 
 from batch4llm.manager.database.models.batch_file import BatchFile
@@ -47,19 +47,12 @@ class WorkerOps:
                 .scalar()
             )
 
-    def count_started_in_last_minute_requests_on_batch(self, batch_id: int) -> int:
-        one_minute_ago = datetime.now() - timedelta(minutes=1)
+    def get_last_request_started_at_for_batch(self, batch_id: int) -> datetime | None:
         with self.SessionLocal() as session:
             return (
-                session.query(func.count(LlmRequest.id))
+                session.query(func.max(LlmRequest.started_at))
                 .join(BatchTask, LlmRequest.batch_task_id == BatchTask.id)
-                .filter(
-                    BatchTask.batch_id == batch_id,
-                    and_(
-                        LlmRequest.started_at.isnot(None),
-                        LlmRequest.started_at >= one_minute_ago,
-                    ),
-                )
+                .filter(BatchTask.batch_id == batch_id)
                 .scalar()
             )
 
@@ -116,6 +109,14 @@ class WorkerOps:
                     Batch.status == BatchStatus.RUNNING, ~Batch.id.in_(pending_tasks)
                 )
                 .all()
+            )
+
+    def count_attempts_for_batch_task(self, batch_task_id: int) -> int:
+        with self.SessionLocal() as session:
+            return (
+                session.query(func.count(LlmRequest.id))
+                .filter(LlmRequest.batch_task_id == batch_task_id)
+                .scalar()
             )
 
     def count_failed_task_of_batch(self, batch_id) -> int:

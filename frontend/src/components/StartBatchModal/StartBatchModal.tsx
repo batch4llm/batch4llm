@@ -68,11 +68,10 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
 
     // ── Batch settings ───────────────────────────────────────────────────
     const [maxTasksPerMinute, setMaxTasksPerMinute] = useState(5);
-    const [maxParallelTasks, setMaxParallelTasks] = useState(1);
+    const [allowConcurrency, setAllowConcurrency] = useState(true);
     const [retriesPerFailedTask, setRetriesPerFailedTask] = useState(2);
     const [failureThresholdPercent, setFailureThresholdPercent] = useState(20);
-    const [queueBatch, setQueueBatch] = useState(true);
-    const [intelligentBackoff, setIntelligentBackoff] = useState(true);
+    const [adaptiveRateLimiting, setAdaptiveRateLimiting] = useState(true);
 
     // ── Sample output ────────────────────────────────────────────────────
     const [sampleOutputText, setSampleOutputText] = useState("");
@@ -265,10 +264,10 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
             name: batchName.trim() || undefined,
             batch_worker_settings: {
                 max_tasks_per_minute: maxTasksPerMinute,
-                max_parallel_tasks: maxParallelTasks,
+                allow_concurrency: allowConcurrency,
+                adaptive_rate_limiting: adaptiveRateLimiting,
                 retries_per_failed_task: retriesPerFailedTask,
                 failure_threshold_percent: failureThresholdPercent,
-                queue_batch: queueBatch,
             },
         };
 
@@ -324,16 +323,14 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
                     onToggleBatchSettings={() => setBatchSettingsOpen(v => !v)}
                     maxTasksPerMinute={maxTasksPerMinute}
                     onSetMaxTasksPerMinute={setMaxTasksPerMinute}
-                    maxParallelTasks={maxParallelTasks}
-                    onSetMaxParallelTasks={setMaxParallelTasks}
+                    allowConcurrency={allowConcurrency}
+                    onSetAllowConcurrency={setAllowConcurrency}
                     retriesPerFailedTask={retriesPerFailedTask}
                     onSetRetriesPerFailedTask={setRetriesPerFailedTask}
                     failureThresholdPercent={failureThresholdPercent}
                     onSetFailureThresholdPercent={setFailureThresholdPercent}
-                    queueBatch={queueBatch}
-                    onSetQueueBatch={setQueueBatch}
-                    intelligentBackoff={intelligentBackoff}
-                    onSetIntelligentBackoff={setIntelligentBackoff}
+                    adaptiveRateLimiting={adaptiveRateLimiting}
+                    onSetAdaptiveRateLimiting={setAdaptiveRateLimiting}
                     estimateOpen={estimateOpen}
                     onToggleEstimate={() => setEstimateOpen(v => !v)}
                     onRunEstimate={runEstimate}

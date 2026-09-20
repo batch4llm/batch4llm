@@ -41,11 +41,13 @@ export interface Batch {
 }
 
 export interface BatchWorkerSettings {
+    // Starting point for the request rate; adaptive_rate_limiting adjusts it
+    // automatically from here.
     max_tasks_per_minute: number;
-    max_parallel_tasks: number;
+    allow_concurrency: boolean;
+    adaptive_rate_limiting: boolean;
     retries_per_failed_task: number;
     failure_threshold_percent: number;
-    queue_batch: boolean;
 }
 
 export interface BatchStartRequest {

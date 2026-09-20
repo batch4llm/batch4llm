@@ -56,7 +56,7 @@ def test_delete_blocked_while_batch_active_then_allowed_after_completion(
         "json_format": False,
         "batch_worker_settings": {
             "max_tasks_per_minute": 20,
-            "max_parallel_tasks": 1,
+            "allow_concurrency": False,
             "retries_per_failed_task": 3,
             "failure_threshold_percent": 0,
             "queue_batch": False,

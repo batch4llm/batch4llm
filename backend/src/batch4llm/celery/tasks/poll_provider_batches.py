@@ -7,6 +7,7 @@ from batch4llm.manager.database.models.llm_request import LlmRequestStatus
 from batch4llm.manager.llm_client.client_manager import ClientManager
 from batch4llm.manager.llm_client.models.response_model import LLMClientResponse
 from batch4llm.manager.price_calculator import calculate_price
+from batch4llm.celery.tasks.process_single_file import retry_or_finalize_batch_task
 
 service_settings = ServiceSettings()
 logger = get_task_logger(__name__)
@@ -90,6 +91,7 @@ def poll_provider_batches():
                     db.batches.update_llm_request_status(
                         llm_request_id,
                         status=LlmRequestStatus.FAILED,
+                        error=entry.error_message,
                     )
                     llm_request = db.worker.get_llm_request_by_id(llm_request_id)
                     if llm_request:
@@ -97,6 +99,9 @@ def poll_provider_batches():
                             batch_task_id=llm_request.batch_task_id,
                             message=f"Provider batch request failed: {entry.error_message}",
                             level=LogLevel.ERROR,
+                        )
+                        retry_or_finalize_batch_task(
+                            batch.id, llm_request.batch_task_id, llm_request.prompt
                         )
 
             db.batches.update_status(batch.id, BatchStatus.COMPLETED)

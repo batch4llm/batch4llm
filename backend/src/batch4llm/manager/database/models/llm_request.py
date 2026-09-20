@@ -33,6 +33,7 @@ class LlmRequest(Base):
     seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
     costs_in_usd: Mapped[float] = mapped_column(Float, nullable=True)
     worker_task_id: Mapped[str] = mapped_column(Text, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     status: Mapped["LlmRequestStatus"] = mapped_column(
         Enum(LlmRequestStatus, name="llm_request_status_enum"),
