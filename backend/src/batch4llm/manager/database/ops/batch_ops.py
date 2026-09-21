@@ -309,6 +309,7 @@ class BatchOps:
         a rate-limit cooldown. The first observation just establishes the
         pacing checkpoint; once a full recovery interval has elapsed since
         the last checkpoint, nudge the rate back up a small step."""
+        previous_rate = None
         with self.SessionLocal() as session:
             batch = session.get(Batch, batch_id)
             if not batch:
@@ -320,6 +321,7 @@ class BatchOps:
             elif (
                 now - batch.last_rate_recovery_at
             ).total_seconds() >= Batch.ADAPTIVE_RATE_RECOVERY_INTERVAL_SECONDS:
+                previous_rate = batch.max_tasks_per_minute
                 batch.max_tasks_per_minute = min(
                     Batch.ADAPTIVE_RATE_SANITY_MAX,
                     batch.max_tasks_per_minute + Batch.ADAPTIVE_RATE_RECOVERY_STEP,
@@ -328,7 +330,16 @@ class BatchOps:
 
             session.commit()
             session.refresh(batch)
-            return batch
+
+        if previous_rate is not None and batch.max_tasks_per_minute > previous_rate:
+            self.add_batch_log(
+                batch_id=batch_id,
+                message=(
+                    f"Rate recovering: increasing from {previous_rate:.2f} "
+                    f"to {batch.max_tasks_per_minute:.2f} tasks/min."
+                ),
+            )
+        return batch
 
     def add_task_log(
         self, batch_task_id: int, message: str, level: LogLevel = LogLevel.INFO

@@ -81,6 +81,15 @@ class WorkerOps:
                     BatchTask.status.notin_(BatchTask.STOPPED_STATUSES),
                     ~dep_unsatisfied,
                 )
+                # Order by the task's original position (batch_file_id, then
+                # task id), not by this LlmRequest's own created_at. A retry
+                # creates a brand-new LlmRequest row, but its BatchTask keeps
+                # its original slot, so retries fall back into the position
+                # they already had instead of jumping to the back of the
+                # queue. Ordering by batch_file_id first also means files are
+                # worked through one at a time in the order they were added
+                # to the batch, rather than round-robining across files.
+                .order_by(BatchTask.batch_file_id.asc(), BatchTask.id.asc())
                 .first()
             )
 
