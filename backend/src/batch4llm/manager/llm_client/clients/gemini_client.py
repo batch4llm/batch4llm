@@ -21,7 +21,9 @@ class GeminiLLMClient(BaseLLMClient):
 
     def models(self) -> list[str]:
         models = self.client.models.list()
-        model_ids = [m.name for m in models]
+        # The Gemini API returns resource names like "models/gemini-2.5-pro";
+        # strip the prefix so ids match what generate_content/pricing expect.
+        model_ids = [m.name.removeprefix("models/") for m in models]
         return model_ids
 
     def health(self) -> EngineHealth:
