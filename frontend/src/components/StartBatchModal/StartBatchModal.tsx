@@ -28,8 +28,13 @@ function prettifyReaderId(id: string): string {
     return id.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
+function computeModalHeight(): number {
+    return Math.round(Math.min(760, Math.max(480, window.innerHeight * 0.8)));
+}
+
 export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
     const [view, setView] = useState<ViewId>("main");
+    const [modalHeight, setModalHeight] = useState(600);
 
     // ── Data ─────────────────────────────────────────────────────────────
     const [models, setModels] = useState<ModelInfo[]>([]);
@@ -47,14 +52,12 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
     const [batchName, setBatchName] = useState("");
     const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
     const [selectedFileTags, setSelectedFileTags] = useState<string[]>([]);
-    const [selectedFileIds, setSelectedFileIds] = useState<number[]>([]);
     const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
     const [fileMode, setFileMode] = useState<FileMode>("upload");
     const [selectedFileReader, setSelectedFileReader] = useState<string | null>(null);
 
     // ── Search ───────────────────────────────────────────────────────────
     const [modelSearch, setModelSearch] = useState("");
-    const [fileSearch, setFileSearch] = useState("");
 
     // ── Collapsibles ─────────────────────────────────────────────────────
     const [modelSettingsOpen, setModelSettingsOpen] = useState(false);
@@ -88,6 +91,7 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
 
     useEffect(() => {
         if (!isOpen) return;
+        setModalHeight(computeModalHeight());
 
         const fetchData = async () => {
             setLoadingModels(true);
@@ -129,16 +133,13 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
     const byTagIds = new Set(
         files.filter(f => selectedFileTags.some(t => f.tags?.includes(t))).map(f => f.id)
     );
-    const selectedFileCount = new Set([...byTagIds, ...selectedFileIds]).size;
+    const selectedFileCount = byTagIds.size;
 
     function filesSummary(): { value?: string; sub?: string } {
         if (selectedFileCount === 0) return {};
-        const parts: string[] = [];
-        if (selectedFileTags.length) parts.push(`Tags: ${selectedFileTags.join(", ")}`);
-        if (selectedFileIds.length) parts.push(`${selectedFileIds.length} individual`);
         return {
             value: `${selectedFileCount} file${selectedFileCount !== 1 ? "s" : ""} selected`,
-            sub: parts.join(" · "),
+            sub: selectedFileTags.length ? `Tags: ${selectedFileTags.join(", ")}` : undefined,
         };
     }
 
@@ -183,10 +184,6 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
         setSelectedFileTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
     }
 
-    function toggleFileId(id: number) {
-        setSelectedFileIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-    }
-
     function activateParam(key: keyof ApiParams, value: number) {
         setApiParams(prev => ({ ...prev, [key]: value }));
     }
@@ -225,6 +222,34 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
         });
     }
 
+    function resetAll() {
+        setView("main");
+        setBatchName("");
+        setSelectedModel(null);
+        setSelectedFileTags([]);
+        setSelectedPrompt(null);
+        setFileMode("upload");
+        setSelectedFileReader(null);
+        setModelSearch("");
+        setModelSettingsOpen(false);
+        setBatchSettingsOpen(false);
+        setEstimateOpen(false);
+        setTemperature(1);
+        setJsonFormat(false);
+        setApiParams({});
+        setMaxTasksPerMinute(5);
+        setAllowConcurrency(true);
+        setRetriesPerFailedTask(2);
+        setFailureThresholdPercent(20);
+        setAdaptiveRateLimiting(true);
+        setSampleOutputText("");
+        setSampleOutputSet(false);
+        setScheduleActive(false);
+        setProviderActive(false);
+        setScheduledAt("");
+        setInvalid({});
+    }
+
     // ── Validation ───────────────────────────────────────────────────────
     function validateSelections(): boolean {
         let valid = true;
@@ -249,7 +274,7 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
             return;
         }
 
-        const filesPayload = Array.from(new Set([...byTagIds, ...selectedFileIds]));
+        const filesPayload = Array.from(byTagIds);
         const fileReaderPayload = fileMode === "upload" ? "upload" : (selectedFileReader as string);
 
         const payload: BatchStartRequest = {
@@ -280,6 +305,7 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
             .then((batch) => {
                 onCreated(batch);
                 onClose();
+                resetAll();
             })
             .catch((err) => {
                 console.error(err);
@@ -291,9 +317,10 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
     const filesSum = filesSummary();
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} className={styles.shell}>
+        <Modal isOpen={isOpen} onClose={onClose} className={styles.shell} style={{ height: modalHeight }}>
             {view === "main" && (
                 <MainView
+                    onResetAll={resetAll}
                     batchName={batchName}
                     onSetBatchName={setBatchName}
                     batchNamePlaceholder={selectedModel ? `${selectedModel.model_name}_<timestamp>` : "auto-generated"}
@@ -303,7 +330,7 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
                     filesSub={filesSum.sub}
                     onOpenFiles={() => setView("files")}
                     promptValue={selectedPrompt?.name}
-                    promptSub={selectedPrompt ? (selectedPrompt.multi_prompt ? "Multi-step" : "1 step") : undefined}
+                    promptSub={selectedPrompt ? (selectedPrompt.multi_prompt ? `${selectedPrompt.step_count ?? "?"} steps` : "1 step") : undefined}
                     onOpenPrompt={() => setView("prompt")}
                     fileMode={fileMode}
                     onSetFileMode={handleSetFileMode}
@@ -365,11 +392,7 @@ export function StartBatchModal({ isOpen, onClose, onCreated }: Props) {
                     loading={loadingFiles || loadingFileTags}
                     fileTags={fileTags}
                     selectedFileTags={selectedFileTags}
-                    selectedFileIds={selectedFileIds}
-                    search={fileSearch}
-                    onSearchChange={setFileSearch}
                     onToggleTag={toggleFileTag}
-                    onToggleFile={toggleFileId}
                     onDone={goBack}
                 />
             )}

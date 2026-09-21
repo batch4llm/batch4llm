@@ -12,22 +12,26 @@ type FileTagProps = {
     tag: string;
     filter?: boolean;
     active?: boolean;
+    size?: "sm" | "lg";
+    count?: number;
     onClick?: () => void;
     onRemove?: () => void;
 };
 
-export function FileTag({ tag, filter = false, active = true, onClick, onRemove }: FileTagProps) {
+export function FileTag({ tag, filter = false, active = true, size = "sm", count, onClick, onRemove }: FileTagProps) {
     const ci = tagColorIndex(tag);
     const cls = [
         styles.tag,
         styles[`tagC${ci}`],
         filter ? styles.filterTag : "",
         filter && !active ? styles.inactiveTag : "",
+        size === "lg" ? styles.lgTag : "",
     ].filter(Boolean).join(" ");
     return (
         <span className={cls} onClick={onClick}>
             <span className={styles.tagDot} />
             {tag}
+            {count !== undefined && <span className={styles.tagCount}>{count}</span>}
             {onRemove && (
                 <button
                     type="button"

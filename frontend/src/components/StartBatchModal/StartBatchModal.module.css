@@ -1,4 +1,5 @@
 /* ── Modal shell override (applied via Modal's className prop) ─────────── */
+/* height comes from the `style` prop (StartBatchModal computes it once from viewport height on open), so the shell — and every sub-view inside it — stays a fixed size no matter which view is active. */
 .shell {
   padding: 0;
   border-radius: 12px;
@@ -6,6 +7,8 @@
   box-shadow: 0 4px 28px rgba(0, 0, 0, 0.13);
   width: 520px;
   max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 input, select, button, textarea { font-family: inherit; }
@@ -13,9 +16,17 @@ input[type="range"] { accent-color: #1e1e2f; width: 100%; }
 input[type="checkbox"] { accent-color: #1e1e2f; cursor: pointer; width: 15px; height: 15px; }
 
 /* ── Views ───────────────────────────────────────────────────────────── */
-/* min-height keeps the modal from resizing when switching to sparser sub-views (e.g. few models/prompts) — short content just leaves white space below instead of shrinking the shell. */
-.view { padding: 24px; min-height: 600px; box-sizing: border-box; animation: subIn 0.15s ease; }
+/* Each view fills the shell's fixed height exactly and scrolls its own overflow, so switching views never resizes the modal. */
+.view { padding: 24px; height: 100%; box-sizing: border-box; overflow-y: auto; animation: subIn 0.15s ease; }
+.viewFlex { display: flex; flex-direction: column; }
+/* used together with .view on sub-views that render their own .stickyHeader, so that header supplies the top inset itself instead of .view's padding — negative margins on a position:sticky element inside a scrolling ancestor cause its reserved layout space and its painted position to diverge (Chromium/Firefox both), which showed up as the sticky header overlapping the first row of content. */
+.viewFlushTop { padding-top: 0; }
 @keyframes subIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+
+.stickyHeader {
+  position: sticky; top: 0; z-index: 5; background: white; overflow: hidden;
+  padding-top: 24px; border-bottom: 1px solid #f1f3f5;
+}
 
 .viewHeader { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
 .viewTitle { font-size: 17px; font-weight: 600; color: #111827; margin: 0; flex: 1; }
@@ -28,8 +39,16 @@ input[type="checkbox"] { accent-color: #1e1e2f; cursor: pointer; width: 15px; he
 }
 .backBtn:hover { background: #f4f4f4; border-color: #c8c8c8; }
 
+.mainHeaderRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
 .mainTitle { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; color: #111827; margin: 0 0 3px; }
-.mainSub { font-size: 12.5px; color: #888; margin: 0 0 20px; }
+.mainSub { font-size: 12.5px; color: #888; margin: 0; }
+
+.resetAllBtn {
+  flex-shrink: 0; padding: 5px 11px; background: white; border: 1.5px solid #e5e5e5;
+  border-radius: 7px; font-size: 11.5px; font-weight: 500; color: #888; cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s; margin-top: 1px;
+}
+.resetAllBtn:hover { background: #fdecec; border-color: #f3c9c9; color: #c53030; }
 
 /* ── Selector rows ───────────────────────────────────────────────────── */
 @keyframes shake {
@@ -238,27 +257,19 @@ input[type="checkbox"] { accent-color: #1e1e2f; cursor: pointer; width: 15px; he
 .badgeSelected { font-size: 11.5px; font-weight: 500; color: #2563eb; background: #eff4ff; border: 1px solid #dbe6ff; border-radius: 999px; padding: 2px 9px; }
 
 /* ── Files view ──────────────────────────────────────────────────────── */
-.tagPillWrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-.orDivider { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.orDivider div { flex: 1; height: 1px; background: #f1f3f5; }
-.orDivider span { font-size: 11.5px; color: #ccc; font-style: italic; }
+.filesHeroHeadline { font-size: 14.5px; font-weight: 600; color: #111827; margin-bottom: 2px; }
+.filesHeroSub { font-size: 12px; color: #888; margin-bottom: 14px; line-height: 1.5; }
+.tagGridLg { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 
-.fileTable { border: 1.5px solid #e5e5e5; border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
-.fileTableHead {
-  display: grid; grid-template-columns: 22px 1fr 70px 130px; gap: 10px; align-items: center;
-  padding: 8px 13px; background: #fafafa; border-bottom: 1px solid #f1f3f5;
-}
-.fileTableHead span { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; color: #bbb; }
-.fileTableBody { max-height: 220px; overflow-y: auto; }
-.fileRow {
-  display: grid; grid-template-columns: 22px 1fr 70px 130px; gap: 10px; align-items: center;
-  padding: 9px 13px; border-bottom: 1px solid #f1f3f5; transition: background 0.12s;
-}
-.fileRow:last-child { border-bottom: none; }
-.fileRow.checked { background: #f5f9ff; }
-.fileName { font-size: 13px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.fileSize { font-size: 11px; font-family: ui-monospace, monospace; color: #999; white-space: nowrap; }
-.fileTagsCell { display: flex; flex-wrap: wrap; gap: 3px; }
+.matchLabel { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; color: #bbb; margin-bottom: 9px; }
+.matchList { flex: 1; min-height: 120px; border: 1.5px solid #e5e5e5; border-radius: 10px; overflow-x: hidden; overflow-y: auto; margin-bottom: 16px; }
+.matchRow { display: flex; align-items: center; gap: 9px; padding: 8px 13px; border-bottom: 1px solid #f1f3f5; font-size: 12.5px; }
+.matchRow:last-child { border-bottom: none; }
+.matchRow .matchName { flex: 1; min-width: 0; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.matchRow .matchSize { color: #bbb; font-family: ui-monospace, monospace; font-size: 10.5px; flex-shrink: 0; }
+.matchTagsCell { display: flex; gap: 3px; flex-shrink: 0; }
+.matchEmpty { height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 16px 13px; text-align: center; font-size: 12px; color: #bbb; font-style: italic; }
+
 .doneRow { display: flex; justify-content: flex-end; }
 .badgeCount { font-size: 12px; font-weight: 500; background: #1e1e2f; color: white; padding: 2px 10px; border-radius: 999px; }
 .emptyNote { font-size: 12.5px; color: #bbb; text-align: center; padding: 16px 0; font-style: italic; }

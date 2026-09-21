@@ -25,24 +25,26 @@ export function ModelView({ models, loading, selectedModel, search, onSearchChan
     );
 
     return (
-        <div className={styles.view}>
-            <div className={styles.viewHeader}>
-                <button type="button" className={styles.backBtn} onClick={onBack}>
-                    <IconBack /> Back
-                </button>
-                <h2 className={styles.viewTitle}>Select Model</h2>
-                {selectedModel && <span className={styles.badgeSelected}>{displayModelName(selectedModel.model_name)}</span>}
-            </div>
+        <div className={`${styles.view} ${styles.viewFlushTop}`}>
+            <div className={styles.stickyHeader}>
+                <div className={styles.viewHeader}>
+                    <button type="button" className={styles.backBtn} onClick={onBack}>
+                        <IconBack /> Back
+                    </button>
+                    <h2 className={styles.viewTitle}>Select Model</h2>
+                    {selectedModel && <span className={styles.badgeSelected}>{displayModelName(selectedModel.model_name)}</span>}
+                </div>
 
-            <div className={styles.searchWrap}>
-                <span className={styles.searchIcon}><IconSearch /></span>
-                <input
-                    type="text"
-                    className={styles.searchInput}
-                    placeholder="Search models, providers..."
-                    value={search}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                />
+                <div className={styles.searchWrap}>
+                    <span className={styles.searchIcon}><IconSearch /></span>
+                    <input
+                        type="text"
+                        className={styles.searchInput}
+                        placeholder="Search models, providers..."
+                        value={search}
+                        onChange={(e) => onSearchChange(e.target.value)}
+                    />
+                </div>
             </div>
 
             <div className={styles.modelGrid}>

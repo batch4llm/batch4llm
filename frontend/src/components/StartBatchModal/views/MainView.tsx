@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { ModelInfo } from "../../../types/Model";
 import { logoFor } from "../../../utils/providerLogo";
 import { fmtCost } from "../formatCost.ts";
@@ -10,6 +11,9 @@ import type { ApiParams, FileMode, InvalidField } from "../types.ts";
 import { IconModel, IconFiles, IconPrompt, IconFileHandling, IconPlay, IconSample, IconCheck } from "../Icons.tsx";
 
 type Props = {
+    // Reset
+    onResetAll: () => void;
+
     // Name
     batchName: string;
     onSetBatchName: (v: string) => void;
@@ -83,6 +87,7 @@ type Props = {
 };
 
 export function MainView({
+    onResetAll,
     batchName, onSetBatchName, batchNamePlaceholder,
     selectedModel, onOpenModel,
     filesValue, filesSub, onOpenFiles,
@@ -101,10 +106,25 @@ export function MainView({
     scheduleActive, onToggleSchedule, providerActive, onToggleProviderBatch,
     scheduledAt, onSetScheduledAt, onStart, submitting,
 }: Props) {
+    const scheduleBoxRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (scheduleActive || providerActive) {
+            scheduleBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+    }, [scheduleActive, providerActive]);
+
     return (
         <div className={styles.view}>
-            <h2 className={styles.mainTitle}>Start Batch</h2>
-            <p className={styles.mainSub}>Configure and launch a new file batch.</p>
+            <div className={styles.mainHeaderRow}>
+                <div>
+                    <h2 className={styles.mainTitle}>Start Batch</h2>
+                    <p className={styles.mainSub}>Configure and launch a new file batch.</p>
+                </div>
+                <button type="button" className={styles.resetAllBtn} onClick={onResetAll}>
+                    Reset all
+                </button>
+            </div>
 
             <div className={styles.nameField}>
                 <label className={styles.nameFieldLabel}>Batch Name</label>
@@ -376,7 +396,7 @@ export function MainView({
             </div>
 
             {scheduleActive && (
-                <div className={`${styles.scheduleBox}${invalid.schedule ? ` ${styles.invalid}` : ""}`}>
+                <div ref={scheduleBoxRef} className={`${styles.scheduleBox}${invalid.schedule ? ` ${styles.invalid}` : ""}`}>
                     <div className={styles.scheduleLabel}>Schedule for</div>
                     <input
                         type="datetime-local"
@@ -389,7 +409,7 @@ export function MainView({
             )}
 
             {providerActive && (
-                <div className={styles.scheduleBox}>
+                <div ref={scheduleBoxRef} className={styles.scheduleBox}>
                     <div className={styles.scheduleLabel}>Provider Batch</div>
                     <p className={styles.scheduleInfo}>
                         The batch is submitted as a single provider-side batch job (e.g. OpenAI Batch API). Lower cost, but results arrive asynchronously — usually within 24 hours.
