@@ -60,6 +60,53 @@ function IconSearch() {
     );
 }
 
+function IconChevron() {
+    return (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 6l6 6-6 6"/>
+        </svg>
+    );
+}
+
+// ── Helpers ─────────────────────────────────────────────────
+const UNTAGGED_KEY = "__untagged__";
+
+function getExt(f: FileData): string {
+    return f.name.split(".").pop()?.toLowerCase() ?? "?";
+}
+
+type FileGroup = {
+    key: string;
+    files: FileData[];
+    totalSize: number;
+    types: string[];
+};
+
+function groupFilesByTag(files: FileData[]): FileGroup[] {
+    const buckets = new Map<string, FileData[]>();
+    for (const f of files) {
+        const tags = f.tags ?? [];
+        if (tags.length === 0) {
+            (buckets.get(UNTAGGED_KEY) ?? buckets.set(UNTAGGED_KEY, []).get(UNTAGGED_KEY)!).push(f);
+        } else {
+            for (const t of tags) {
+                (buckets.get(t) ?? buckets.set(t, []).get(t)!).push(f);
+            }
+        }
+    }
+    const tagKeys = Array.from(buckets.keys()).filter(k => k !== UNTAGGED_KEY).sort((a, b) => a.localeCompare(b));
+    const orderedKeys = buckets.has(UNTAGGED_KEY) ? [...tagKeys, UNTAGGED_KEY] : tagKeys;
+    return orderedKeys.map(key => {
+        const groupFiles = buckets.get(key)!;
+        return {
+            key,
+            files: groupFiles,
+            totalSize: groupFiles.reduce((acc, f) => acc + (f.size ?? 0), 0),
+            types: Array.from(new Set(groupFiles.map(getExt))).sort(),
+        };
+    });
+}
+
 // ── Confirm Delete Modal (file-specific, stays here) ──────────
 type DeleteModalProps = {
     file: FileData | null;
@@ -88,13 +135,13 @@ function ConfirmDeleteModal({ file, onClose, onConfirm }: DeleteModalProps) {
 export default function FilesPage() {
     const [files, setFiles] = useState<FileData[]>([]);
     const [query, setQuery] = useState("");
-    const [activeTags, setActiveTags] = useState<string[]>([]);
     const [isUploadOpen, setIsUploadOpen] = useState(false);
     const [uploadKey, setUploadKey] = useState(0);
     const [viewing, setViewing] = useState<FileData | null>(null);
     const [testing, setTesting] = useState<FileData | null>(null);
     const [deleting, setDeleting] = useState<FileData | null>(null);
     const [editingTags, setEditingTags] = useState<FileData | null>(null);
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
     function loadFiles() {
         FilesAPI.getAll().then(setFiles);
@@ -102,19 +149,19 @@ export default function FilesPage() {
 
     useEffect(() => { loadFiles(); }, []);
 
-    const allTagIds = Array.from(new Set(files.flatMap(f => f.tags ?? [])));
-
-    function toggleTag(id: string) {
-        setActiveTags(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+    function toggleGroup(key: string) {
+        setExpandedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key); else next.add(key);
+            return next;
+        });
     }
 
-    const filtered = files.filter(f => {
-        const matchesQuery = !query || f.name.toLowerCase().includes(query.toLowerCase());
-        const matchesTags = activeTags.length === 0 || activeTags.some(t => (f.tags ?? []).includes(t));
-        return matchesQuery && matchesTags;
-    });
+    const filtered = files.filter(f => !query || f.name.toLowerCase().includes(query.toLowerCase()));
 
     const totalSize = filtered.reduce((acc, f) => acc + (f.size ?? 0), 0);
+    const isSearching = query.trim().length > 0;
+    const groups = isSearching ? [] : groupFilesByTag(filtered);
 
     function handleDelete(id: number) {
         FilesAPI.delete(id)
@@ -127,6 +174,49 @@ export default function FilesPage() {
 
     function handleTagsSaved(updated: FileData) {
         setFiles(prev => prev.map(f => f.id === updated.id ? updated : f));
+    }
+
+    function renderRow(f: FileData) {
+        return (
+            <div
+                key={f.id}
+                className={styles.row}
+                role="button"
+                tabIndex={0}
+                onClick={() => setViewing(f)}
+                onKeyDown={e => (e.key === "Enter" || e.key === " ") && setViewing(f)}
+            >
+                <div className={styles.rowName}>
+                    <span className={styles.rowNameText}>{f.name}</span>
+                    {f.created_at && (
+                        <span className={styles.rowNameMeta}>Added {formatDate(f.created_at)}</span>
+                    )}
+                </div>
+                <div className={styles.rowExt}>.{getExt(f)}</div>
+                <div className={styles.rowSize}>{f.size != null ? formatBytes(f.size) : "—"}</div>
+                <div className={styles.rowTags}>
+                    {(f.tags ?? []).map(t => <FileTag key={t} tag={t} />)}
+                </div>
+                <div className={styles.rowActions} onClick={e => e.stopPropagation()}>
+                    <button className={styles.iconBtn} title="View file" onClick={() => setViewing(f)}>
+                        <IconEye />
+                    </button>
+                    <button className={styles.iconBtn} title="Test file reader" onClick={() => setTesting(f)}>
+                        <IconBeaker />
+                    </button>
+                    <button className={styles.iconBtn} title="Edit tags" onClick={() => setEditingTags(f)}>
+                        <IconTag />
+                    </button>
+                    <button
+                        className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                        title="Delete file"
+                        onClick={() => setDeleting(f)}
+                    >
+                        <IconTrash />
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -150,20 +240,6 @@ export default function FilesPage() {
                         onChange={e => setQuery(e.target.value)}
                     />
                 </div>
-                {allTagIds.length > 0 && (
-                    <div className={styles.tagFilterRow}>
-                        <span className={styles.tagFilterLabel}>Filter:</span>
-                        {allTagIds.map(id => (
-                            <FileTag
-                                key={id}
-                                tag={id}
-                                filter
-                                active={activeTags.length === 0 || activeTags.includes(id)}
-                                onClick={() => toggleTag(id)}
-                            />
-                        ))}
-                    </div>
-                )}
             </div>
 
             <div className={styles.list}>
@@ -179,46 +255,45 @@ export default function FilesPage() {
                     <div className={styles.empty}>No files match your search.</div>
                 )}
 
-                {filtered.map(f => (
-                    <div
-                        key={f.id}
-                        className={styles.row}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setViewing(f)}
-                        onKeyDown={e => (e.key === "Enter" || e.key === " ") && setViewing(f)}
-                    >
-                        <div className={styles.rowName}>
-                            <span className={styles.rowNameText}>{f.name}</span>
-                            {f.created_at && (
-                                <span className={styles.rowNameMeta}>Added {formatDate(f.created_at)}</span>
-                            )}
-                        </div>
-                        <div className={styles.rowExt}>.{f.name.split(".").pop()?.toLowerCase() ?? "?"}</div>
-                        <div className={styles.rowSize}>{f.size != null ? formatBytes(f.size) : "—"}</div>
-                        <div className={styles.rowTags}>
-                            {(f.tags ?? []).map(t => <FileTag key={t} tag={t} />)}
-                        </div>
-                        <div className={styles.rowActions} onClick={e => e.stopPropagation()}>
-                            <button className={styles.iconBtn} title="View file" onClick={() => setViewing(f)}>
-                                <IconEye />
-                            </button>
-                            <button className={styles.iconBtn} title="Test file reader" onClick={() => setTesting(f)}>
-                                <IconBeaker />
-                            </button>
-                            <button className={styles.iconBtn} title="Edit tags" onClick={() => setEditingTags(f)}>
-                                <IconTag />
-                            </button>
-                            <button
-                                className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                                title="Delete file"
-                                onClick={() => setDeleting(f)}
-                            >
-                                <IconTrash />
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                {isSearching
+                    ? filtered.map(f => renderRow(f))
+                    : groups.map(group => {
+                        const isExpanded = expandedGroups.has(group.key);
+                        const isUntagged = group.key === UNTAGGED_KEY;
+                        return (
+                            <div key={group.key} className={styles.group}>
+                                <button
+                                    type="button"
+                                    className={styles.groupHeader}
+                                    onClick={() => toggleGroup(group.key)}
+                                    aria-expanded={isExpanded}
+                                >
+                                    <span className={`${styles.groupChevron} ${isExpanded ? styles.groupChevronOpen : ""}`}>
+                                        <IconChevron />
+                                    </span>
+                                    {isUntagged ? (
+                                        <span className={styles.untaggedBadge}>
+                                            Untagged
+                                            <span className={styles.groupBadgeCount}>
+                                                {group.files.length} file{group.files.length === 1 ? "" : "s"}
+                                            </span>
+                                        </span>
+                                    ) : (
+                                        <FileTag tag={group.key} size="lg" count={group.files.length} />
+                                    )}
+                                    <span className={styles.groupSize}>{formatBytes(group.totalSize)}</span>
+                                    <span className={styles.groupTypes}>
+                                        {group.types.map(t => `.${t}`).join("  ·  ")}
+                                    </span>
+                                </button>
+                                {isExpanded && (
+                                    <div className={styles.groupBody}>
+                                        {group.files.map(f => renderRow(f))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
             </div>
 
             <div className={styles.foot}>

@@ -1,6 +1,6 @@
 import styles from "./FileTag.module.css";
 
-const COLOR_COUNT = 8;
+const COLOR_COUNT = 7;
 
 export function tagColorIndex(tag: string): number {
     let h = 0;
@@ -31,7 +31,9 @@ export function FileTag({ tag, filter = false, active = true, size = "sm", count
         <span className={cls} onClick={onClick}>
             <span className={styles.tagDot} />
             {tag}
-            {count !== undefined && <span className={styles.tagCount}>{count}</span>}
+            {count !== undefined && (
+                <span className={styles.tagCount}>{count} file{count === 1 ? "" : "s"}</span>
+            )}
             {onRemove && (
                 <button
                     type="button"
