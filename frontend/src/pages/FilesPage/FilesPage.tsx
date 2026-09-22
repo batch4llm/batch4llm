@@ -131,6 +131,32 @@ function ConfirmDeleteModal({ file, onClose, onConfirm }: DeleteModalProps) {
     );
 }
 
+// ── Confirm Delete-Tag Modal ───────────────────────────────────
+type DeleteTagModalProps = {
+    tag: string | null;
+    fileCount: number;
+    onClose: () => void;
+    onConfirm: (tag: string) => void;
+};
+
+function ConfirmDeleteTagModal({ tag, fileCount, onClose, onConfirm }: DeleteTagModalProps) {
+    if (!tag) return null;
+    return (
+        <Modal isOpen onClose={onClose} className={styles.narrowModal}>
+            <h3 className={styles.confirmTitle}>Delete tag &quot;{tag}&quot;?</h3>
+            <p className={styles.confirmBody}>
+                All <strong>{fileCount}</strong> file{fileCount === 1 ? "" : "s"} tagged <strong>{tag}</strong> will
+                be permanently removed from your workspace. Files still in use by a running batch are kept and
+                stay tagged. This cannot be undone.
+            </p>
+            <div className={styles.confirmActions}>
+                <button className={styles.btnSecondary} onClick={onClose}>Cancel</button>
+                <button className={styles.btnDanger} onClick={() => { onConfirm(tag); onClose(); }}>Delete all</button>
+            </div>
+        </Modal>
+    );
+}
+
 // ── Page ──────────────────────────────────────────────────────
 export default function FilesPage() {
     const [files, setFiles] = useState<FileData[]>([]);
@@ -140,6 +166,7 @@ export default function FilesPage() {
     const [viewing, setViewing] = useState<FileData | null>(null);
     const [testing, setTesting] = useState<FileData | null>(null);
     const [deleting, setDeleting] = useState<FileData | null>(null);
+    const [deletingTag, setDeletingTag] = useState<string | null>(null);
     const [editingTags, setEditingTags] = useState<FileData | null>(null);
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -169,6 +196,23 @@ export default function FilesPage() {
             .catch((err) => {
                 const detail = err?.response?.data?.detail;
                 alert(detail || "File could not be deleted.");
+            });
+    }
+
+    function handleDeleteTag(tag: string) {
+        FilesAPI.deleteByTag(tag)
+            .then(({ deleted, skipped }) => {
+                setFiles(prev => prev.filter(f => !deleted.includes(f.id)));
+                if (skipped.length > 0) {
+                    alert(
+                        `${skipped.length} file${skipped.length === 1 ? "" : "s"} tagged "${tag}" ` +
+                        `could not be deleted because ${skipped.length === 1 ? "it's" : "they're"} still used by an active batch.`
+                    );
+                }
+            })
+            .catch((err) => {
+                const detail = err?.response?.data?.detail;
+                alert(detail || "Files could not be deleted.");
             });
     }
 
@@ -262,30 +306,43 @@ export default function FilesPage() {
                         const isUntagged = group.key === UNTAGGED_KEY;
                         return (
                             <div key={group.key} className={styles.group}>
-                                <button
-                                    type="button"
-                                    className={styles.groupHeader}
-                                    onClick={() => toggleGroup(group.key)}
-                                    aria-expanded={isExpanded}
-                                >
-                                    <span className={`${styles.groupChevron} ${isExpanded ? styles.groupChevronOpen : ""}`}>
-                                        <IconChevron />
-                                    </span>
-                                    {isUntagged ? (
-                                        <span className={styles.untaggedBadge}>
-                                            Untagged
-                                            <span className={styles.groupBadgeCount}>
-                                                {group.files.length} file{group.files.length === 1 ? "" : "s"}
-                                            </span>
+                                <div className={styles.groupHeader}>
+                                    <button
+                                        type="button"
+                                        className={styles.groupHeaderToggle}
+                                        onClick={() => toggleGroup(group.key)}
+                                        aria-expanded={isExpanded}
+                                    >
+                                        <span className={`${styles.groupChevron} ${isExpanded ? styles.groupChevronOpen : ""}`}>
+                                            <IconChevron />
                                         </span>
-                                    ) : (
-                                        <FileTag tag={group.key} size="lg" count={group.files.length} />
+                                        {isUntagged ? (
+                                            <span className={styles.untaggedBadge}>
+                                                Untagged
+                                                <span className={styles.groupBadgeCount}>
+                                                    {group.files.length} file{group.files.length === 1 ? "" : "s"}
+                                                </span>
+                                            </span>
+                                        ) : (
+                                            <FileTag tag={group.key} size="lg" count={group.files.length} />
+                                        )}
+                                        <span className={styles.groupSize}>{formatBytes(group.totalSize)}</span>
+                                        <span className={styles.groupTypes}>
+                                            {group.types.map(t => `.${t}`).join("  ·  ")}
+                                        </span>
+                                    </button>
+                                    {!isUntagged && (
+                                        <div className={styles.groupHeaderActions}>
+                                            <button
+                                                className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                                                title={`Delete all files tagged "${group.key}"`}
+                                                onClick={() => setDeletingTag(group.key)}
+                                            >
+                                                <IconTrash />
+                                            </button>
+                                        </div>
                                     )}
-                                    <span className={styles.groupSize}>{formatBytes(group.totalSize)}</span>
-                                    <span className={styles.groupTypes}>
-                                        {group.types.map(t => `.${t}`).join("  ·  ")}
-                                    </span>
-                                </button>
+                                </div>
                                 {isExpanded && (
                                     <div className={styles.groupBody}>
                                         {group.files.map(f => renderRow(f))}
@@ -315,6 +372,12 @@ export default function FilesPage() {
             />
             <ReaderTestModal file={testing} onClose={() => setTesting(null)} />
             <ConfirmDeleteModal file={deleting} onClose={() => setDeleting(null)} onConfirm={handleDelete} />
+            <ConfirmDeleteTagModal
+                tag={deletingTag}
+                fileCount={deletingTag ? files.filter(f => (f.tags ?? []).includes(deletingTag)).length : 0}
+                onClose={() => setDeletingTag(null)}
+                onConfirm={handleDeleteTag}
+            />
             <EditTagsModal
                 key={editingTags?.id ?? "none"}
                 file={editingTags}

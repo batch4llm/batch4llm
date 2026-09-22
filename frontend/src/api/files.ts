@@ -1,6 +1,11 @@
 import { api } from "./client";
 import type { FileData } from "../types/FileData";
 
+export type DeleteByTagResult = {
+    deleted: number[];
+    skipped: number[];
+};
+
 export const FilesAPI = {
     getAll: (): Promise<FileData[]> =>
         api.get("/files/").then(r => r.data),
@@ -18,6 +23,9 @@ export const FilesAPI = {
 
     delete: (file_id: number): Promise<void> =>
         api.delete(`/files/delete/${file_id}`),
+
+    deleteByTag: (tag: string): Promise<DeleteByTagResult> =>
+        api.delete(`/files/by-tag/${encodeURIComponent(tag)}`).then(r => r.data),
 
     download: (file_id: number): Promise<Blob> =>
         api.get(`/files/download/${file_id}`, {

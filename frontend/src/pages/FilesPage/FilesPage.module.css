@@ -179,19 +179,38 @@
 .groupHeader {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
   padding: 11px 16px;
   background: #fafafa;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  text-align: left;
   transition: background 0.12s ease;
 }
 
 .groupHeader:hover { background: #f3f4f6; }
-.groupHeader:active { transform: none; }
+
+.groupHeaderToggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.groupHeaderToggle:active { transform: none; }
+
+.groupHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
 
 .groupChevron {
   display: inline-flex;
