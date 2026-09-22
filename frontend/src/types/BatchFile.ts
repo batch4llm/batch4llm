@@ -4,7 +4,8 @@ import type { BatchTaskPreview, BatchTaskStatus } from "./BatchTask.ts";
 export interface BatchFileOverview {
     id: number;
     batch_id: number;
-    file_id: number;
+    /** Null once the source file has been deleted; `name` still reflects it. */
+    file_id: number | null;
     name: string;
     status: BatchTaskStatus;
     task_count: number;
@@ -17,7 +18,8 @@ export interface BatchFileOverview {
 export interface BatchFileDetail {
     id: number;
     batch_id: number;
-    file_id: number;
+    /** Null once the source file has been deleted; `name` still reflects it. */
+    file_id: number | null;
     name: string;
     status: BatchTaskStatus;
     batch_tasks: BatchTaskPreview[];

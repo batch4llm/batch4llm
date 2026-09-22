@@ -29,7 +29,9 @@ class BatchTask(Base):
     batch_file_id: Mapped[int] = mapped_column(
         ForeignKey("batch_files.id"), nullable=False
     )
-    file_id: Mapped[int] = mapped_column(ForeignKey("files.id"), nullable=False)
+    file_id: Mapped[int | None] = mapped_column(
+        ForeignKey("files.id", ondelete="SET NULL"), nullable=True
+    )
     endpoint_id: Mapped[int | None] = mapped_column(
         ForeignKey("endpoints.id", ondelete="SET NULL"), nullable=True
     )

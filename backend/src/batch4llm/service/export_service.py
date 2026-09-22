@@ -16,7 +16,14 @@ class ExportService:
             batch_export = self.db.export.get_batch_for_export(batch_id, user_id)
             long_format = []
 
-            file_by_id = {f.id: f for f in batch_export.files}
+            # Keyed by batch_file_id (stable, never nulled) rather than
+            # file_id/File, since the source file may have since been
+            # deleted (allowed once its batch is no longer active) —
+            # BatchFile.name is a snapshot of the original filename taken
+            # at batch-creation time and survives that deletion.
+            file_name_by_batch_file_id = {
+                bf.id: bf.name for bf in batch_export.batch_files
+            }
             for task in batch_export.batch_tasks:
                 successful_request = next(
                     (r for r in task.llm_requests if r.status.value == "COMPLETED"),
@@ -31,7 +38,7 @@ class ExportService:
                         "provider": batch_export.endpoint.provider,
                         "model": batch_export.batch.model,
                         "temperature": batch_export.batch.temperature,
-                        "file_name": file_by_id[task.file_id].name,
+                        "file_name": file_name_by_batch_file_id[task.batch_file_id],
                         "prompt_marker": task.prompt_marker,
                         "output": (
                             successful_request.output if successful_request else None

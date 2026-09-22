@@ -8,7 +8,6 @@ from batch4llm.manager.database.models.batch import (
 )
 from batch4llm.manager.database.models.batch_file import BatchFile
 from batch4llm.manager.database.models.endpoint import Endpoint
-from batch4llm.manager.database.models.file import File
 from batch4llm.manager.database.models.prompt import Prompt
 
 
@@ -17,7 +16,6 @@ class BatchExport:
     batch: Batch
     endpoint: Endpoint
     prompt: Prompt
-    files: List[File]
     batch_files: List[BatchFile]
     batch_tasks: List[BatchTask]
 
@@ -31,7 +29,7 @@ class ExportOps:
             query = (
                 session.query(Batch)
                 .options(
-                    selectinload(Batch.batch_files).selectinload(BatchFile.file),
+                    selectinload(Batch.batch_files),
                     selectinload(Batch.batch_tasks).selectinload(
                         BatchTask.llm_requests
                     ),
@@ -48,7 +46,6 @@ class ExportOps:
                 batch=batch,
                 endpoint=batch.endpoint,
                 prompt=batch.prompt,
-                files=[bf.file for bf in batch.batch_files],
                 batch_files=batch.batch_files,
                 batch_tasks=batch.batch_tasks,
             )

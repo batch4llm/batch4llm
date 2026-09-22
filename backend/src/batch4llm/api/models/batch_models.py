@@ -70,7 +70,7 @@ class BatchData(BaseModel):
 class BatchFileOverviewData(BaseModel):
     id: int
     batch_id: int
-    file_id: int
+    file_id: Optional[int] = None
     name: str
     status: str
     task_count: int
@@ -100,7 +100,7 @@ class BatchTaskPreviewData(BaseModel):
 class BatchFileDetailData(BaseModel):
     id: int
     batch_id: int
-    file_id: int
+    file_id: Optional[int] = None
     name: str
     status: str
     batch_tasks: list[BatchTaskPreviewData]
@@ -146,7 +146,7 @@ class BatchTaskDetailData(BaseModel):
     id: int
     batch_id: int
     batch_file_id: int
-    file_id: int
+    file_id: Optional[int] = None
     status: BatchTaskStatus
     prompt_marker: Optional[str] = None
     depends_on_batch_task_id: Optional[int] = None
