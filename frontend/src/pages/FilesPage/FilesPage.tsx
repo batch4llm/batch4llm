@@ -169,6 +169,7 @@ export default function FilesPage() {
     const [deletingTag, setDeletingTag] = useState<string | null>(null);
     const [editingTags, setEditingTags] = useState<FileData | null>(null);
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+    const [autoExpandedKey, setAutoExpandedKey] = useState<string | null>(null);
 
     function loadFiles() {
         FilesAPI.getAll().then(setFiles);
@@ -189,6 +190,12 @@ export default function FilesPage() {
     const totalSize = filtered.reduce((acc, f) => acc + (f.size ?? 0), 0);
     const isSearching = query.trim().length > 0;
     const groups = isSearching ? [] : groupFilesByTag(filtered);
+    const soleGroupKey = groups.length === 1 ? groups[0].key : null;
+
+    if (soleGroupKey && soleGroupKey !== autoExpandedKey) {
+        setAutoExpandedKey(soleGroupKey);
+        setExpandedGroups(prev => new Set(prev).add(soleGroupKey));
+    }
 
     function handleDelete(id: number) {
         FilesAPI.delete(id)
