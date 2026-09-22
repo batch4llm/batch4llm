@@ -46,6 +46,29 @@ function parsePct(progress?: string): number {
     return Math.min(100, Math.round((done / total) * 100));
 }
 
+const ACTIVE_STATUS_ORDER: Record<BatchStatus, number> = {
+    SCHEDULED:              0,
+    QUEUED:                 1,
+    RUNNING:                2,
+    PROVIDER_BATCH_PENDING: 3,
+    COMPLETED:              4,
+    STOPPED:                4,
+    FAILED:                 4,
+};
+
+function sortActive(batches: Batch[]): Batch[] {
+    return [...batches].sort((a, b) =>
+        ACTIVE_STATUS_ORDER[a.status] - ACTIVE_STATUS_ORDER[b.status] ||
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+}
+
+function sortHistory(batches: Batch[]): Batch[] {
+    return [...batches].sort((a, b) =>
+        new Date(b.stopped_at ?? b.updated_at).getTime() - new Date(a.stopped_at ?? a.updated_at).getTime()
+    );
+}
+
 function matchSearch(batch: Batch, q: string): boolean {
     if (!q) return true;
     const lower = q.toLowerCase();
@@ -61,16 +84,17 @@ function matchSearch(batch: Batch, q: string): boolean {
 // ── BatchCard ─────────────────────────────────────────────────────────────────
 interface BatchCardProps {
     batch: Batch;
+    isExpanded: boolean;
+    onToggleExpanded: (b: Batch) => void;
     onDetails: (b: Batch) => void;
     onLog: (b: Batch) => void;
     onExport: (b: Batch) => void;
-    onStop: (b: Batch) => void;
+    onStop: (b: Batch) => Promise<void>;
     onArchive: (b: Batch) => void;
-    onEndpoint: (b: Batch) => void;
-    onPrompt: (b: Batch) => void;
 }
 
-function BatchCard({ batch, onDetails, onLog, onExport, onStop, onArchive, onEndpoint, onPrompt }: BatchCardProps) {
+function BatchCard({ batch, isExpanded, onToggleExpanded, onDetails, onLog, onExport, onStop, onArchive }: BatchCardProps) {
+    const [isStopping, setIsStopping] = useState(false);
     const isActive = ACTIVE_STATUSES.includes(batch.status);
     const isRunning = batch.status === "RUNNING";
     const isQueued  = batch.status === "QUEUED" || batch.status === "SCHEDULED";
@@ -82,18 +106,31 @@ function BatchCard({ batch, onDetails, onLog, onExport, onStop, onArchive, onEnd
         return (e: React.MouseEvent) => { e.stopPropagation(); fn(batch); };
     }
 
+    function toggleExpanded() {
+        onToggleExpanded(batch);
+    }
+
+    function handleStopClick(e: React.MouseEvent) {
+        e.stopPropagation();
+        if (isStopping) return;
+        setIsStopping(true);
+        onStop(batch).finally(() => setIsStopping(false));
+    }
+
     return (
         <div
-            className={`${styles.card} ${STATUS_CLASS[batch.status]}${isArchived ? ` ${styles.isArchived}` : ""}`}
+            className={`${styles.card} ${STATUS_CLASS[batch.status]}${isArchived ? ` ${styles.isArchived}` : ""}${isExpanded ? ` ${styles.isExpanded}` : ""}`}
             role="button"
             tabIndex={0}
-            onClick={() => onDetails(batch)}
-            onKeyDown={e => (e.key === "Enter" || e.key === " ") && onDetails(batch)}
+            aria-expanded={isExpanded}
+            onClick={toggleExpanded}
+            onKeyDown={e => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), toggleExpanded())}
         >
             {/* ── Title row ──────────────────────────────────────── */}
             <div className={styles.cardTop}>
                 <span className={styles.name}>{batch.name}</span>
                 <span className={styles.statusWord}>{STATUS_LABEL[batch.status]}</span>
+                <IcChevron className={styles.chevron} />
             </div>
 
             {/* ── Sub-meta ───────────────────────────────────────── */}
@@ -103,21 +140,21 @@ function BatchCard({ batch, onDetails, onLog, onExport, onStop, onArchive, onEnd
                 <span>{batch.model}</span>
                 <span className={styles.sep}>·</span>
                 {batch.endpoint_id != null ? (
-                    <button className={styles.metaLink} onClick={stop(onEndpoint)} title="View endpoint">
+                    <span className={styles.metaText}>
                         {batch.endpoint_name ?? `endpoint #${batch.endpoint_id}`}
-                    </button>
+                    </span>
                 ) : (
-                    <span className={styles.metaLinkDeleted} title="Endpoint was deleted">
+                    <span className={styles.metaTextDeleted} title="Endpoint was deleted">
                         {batch.endpoint_name ?? "endpoint deleted"}
                     </span>
                 )}
                 <span className={styles.sep}>·</span>
                 {batch.prompt_id != null ? (
-                    <button className={styles.metaLink} onClick={stop(onPrompt)} title="View prompt">
+                    <span className={styles.metaText}>
                         {batch.prompt_name ?? `prompt #${batch.prompt_id}`}
-                    </button>
+                    </span>
                 ) : (
-                    <span className={styles.metaLinkDeleted} title="Prompt was deleted">
+                    <span className={styles.metaTextDeleted} title="Prompt was deleted">
                         {batch.prompt_name ?? "prompt deleted"}
                     </span>
                 )}
@@ -153,28 +190,34 @@ function BatchCard({ batch, onDetails, onLog, onExport, onStop, onArchive, onEnd
                 {!isQueued && !isPending && <span style={{ width: `${pct}%` }} />}
             </div>
 
-            {/* ── Action buttons (revealed on hover) ─────────────── */}
-            <div className={styles.actions} onClick={e => e.stopPropagation()}>
-                <button className={styles.ic} title="View details" onClick={stop(onDetails)}>
-                    <IcDetails />
-                </button>
-                <button className={styles.ic} title="View log" onClick={stop(onLog)}>
-                    <IcLog />
-                </button>
-                <button className={styles.ic} title="Export" onClick={stop(onExport)}>
-                    <IcExport />
-                </button>
-                {isActive && (
-                    <button className={`${styles.ic} ${styles.icStop}`} title="Stop batch" onClick={stop(onStop)}>
-                        <IcStop />
+            {/* ── Action panel (revealed when card is expanded) ───── */}
+            {isExpanded && (
+                <div className={styles.actionsPanel} onClick={e => e.stopPropagation()}>
+                    <button className={styles.actionBtn} onClick={stop(onDetails)}>
+                        <IcDetails /> View details
                     </button>
-                )}
-                {!isActive && !isArchived && (
-                    <button className={styles.ic} title="Archive" onClick={stop(onArchive)}>
-                        <IcArchive />
+                    <button className={styles.actionBtn} onClick={stop(onLog)}>
+                        <IcLog /> View log
                     </button>
-                )}
-            </div>
+                    <button className={styles.actionBtn} onClick={stop(onExport)}>
+                        <IcExport /> Export
+                    </button>
+                    {isActive && (
+                        <button
+                            className={`${styles.actionBtn} ${styles.actionBtnStop}`}
+                            onClick={handleStopClick}
+                            disabled={isStopping}
+                        >
+                            <IcStop /> {isStopping ? "Stopping…" : "Stop batch"}
+                        </button>
+                    )}
+                    {!isActive && !isArchived && (
+                        <button className={styles.actionBtn} onClick={stop(onArchive)}>
+                            <IcArchive /> Archive
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
@@ -206,6 +249,7 @@ export default function BatchesPage() {
     const [promptBatchId, setPromptBatchId] = useState<number | null>(null);
     const [exportBatchId, setExportBatchId] = useState<number | null>(null);
     const [clonePrompt, setClonePrompt] = useState<Prompt | null>(null);
+    const [expandedBatchId, setExpandedBatchId] = useState<number | null>(null);
 
     // ── Load all batches, prompts & endpoints ─────────────────────────────────
     useEffect(() => {
@@ -233,8 +277,8 @@ export default function BatchesPage() {
         const nonArchived = batches.filter(b => !b.archived_at);
         const archived    = batches.filter(b =>  b.archived_at);
         return {
-            active:   nonArchived.filter(b => ACTIVE_STATUSES.includes(b.status) && matchSearch(b, q)),
-            history:  nonArchived.filter(b => !ACTIVE_STATUSES.includes(b.status) && matchSearch(b, q)),
+            active:   sortActive(nonArchived.filter(b => ACTIVE_STATUSES.includes(b.status) && matchSearch(b, q))),
+            history:  sortHistory(nonArchived.filter(b => !ACTIVE_STATUSES.includes(b.status) && matchSearch(b, q))),
             archived: archived.filter(b => matchSearch(b, q)),
         };
     }, [batches, query]);
@@ -244,8 +288,10 @@ export default function BatchesPage() {
         setDetailBatchId(batch.id);
     }
 
-    function handleStop(batch: Batch) {
-        BatchesAPI.stop(batch.id).catch(err => { alert(err); console.error(err); });
+    function handleStop(batch: Batch): Promise<void> {
+        return BatchesAPI.stop(batch.id)
+            .then(updated => setBatches(prev => prev.map(b => b.id === updated.id ? updated : b)))
+            .catch(err => { alert(err); console.error(err); });
     }
 
     function handleArchive(batch: Batch) {
@@ -259,6 +305,7 @@ export default function BatchesPage() {
     }
 
     const cardHandlers = {
+        onToggleExpanded: (b: Batch) => setExpandedBatchId(prev => prev === b.id ? null : b.id),
         onDetails:  openDetail,
         onLog:      (b: Batch) => setLogBatchId(b.id),
         onExport:   handleExport,
@@ -344,7 +391,7 @@ export default function BatchesPage() {
                             <div className={styles.list}>
                                 {filtered.active.length === 0
                                     ? <div className={styles.emptyState}>No batches are currently running or queued.</div>
-                                    : filtered.active.map(b => <BatchCard key={b.id} batch={b} {...cardHandlers} />)
+                                    : filtered.active.map(b => <BatchCard key={b.id} batch={b} isExpanded={expandedBatchId === b.id} {...cardHandlers} />)
                                 }
                             </div>
 
@@ -352,7 +399,7 @@ export default function BatchesPage() {
                             <div className={styles.list}>
                                 {filtered.history.length === 0
                                     ? <div className={styles.emptyState}>{query ? "No finished batches match your search." : "No finished batches yet."}</div>
-                                    : filtered.history.map(b => <BatchCard key={b.id} batch={b} {...cardHandlers} />)
+                                    : filtered.history.map(b => <BatchCard key={b.id} batch={b} isExpanded={expandedBatchId === b.id} {...cardHandlers} />)
                                 }
                             </div>
                         </>
@@ -367,7 +414,7 @@ export default function BatchesPage() {
                     <div className={styles.list}>
                         {filtered.archived.length === 0
                             ? <div className={styles.emptyState}>{query ? "No archived batches match your search." : "No archived batches."}</div>
-                            : filtered.archived.map(b => <BatchCard key={b.id} batch={b} {...cardHandlers} />)
+                            : filtered.archived.map(b => <BatchCard key={b.id} batch={b} isExpanded={expandedBatchId === b.id} {...cardHandlers} />)
                         }
                     </div>
                 </>
@@ -377,7 +424,12 @@ export default function BatchesPage() {
             <StartBatchModal
                 isOpen={isStartModalOpen}
                 onClose={() => setIsStartModalOpen(false)}
-                onCreated={(newBatch: Batch) => setBatches(prev => [...prev, newBatch])}
+                onCreated={(newBatch: Batch) => {
+                    setBatches(prev => [...prev, newBatch]);
+                    // The create response is missing backend-computed fields
+                    // (e.g. progress), so refetch right away to replace it.
+                    BatchesAPI.getAll().then(setBatches);
+                }}
             />
 
             {logBatch && (
@@ -394,6 +446,8 @@ export default function BatchesPage() {
                     isOpen={!!detailBatchId}
                     onClose={() => setDetailBatchId(null)}
                     batch={detailBatch}
+                    onViewEndpoint={() => { setEndpointBatchId(detailBatch.id); setDetailBatchId(null); }}
+                    onViewPrompt={() => { setPromptBatchId(detailBatch.id); setDetailBatchId(null); }}
                 />
             )}
 
@@ -466,6 +520,13 @@ function IcArchive() {
             <rect x="2.5" y="4" width="19" height="4.5" rx="1" />
             <path d="M4 8.5V19a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 19V8.5" />
             <line x1="10" y1="13" x2="14" y2="13" />
+        </svg>
+    );
+}
+function IcChevron({ className }: { className?: string }) {
+    return (
+        <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="12" height="12">
+            <polyline points="4 6 8 10 12 6" />
         </svg>
     );
 }

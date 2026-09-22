@@ -541,13 +541,13 @@ class BatchOps:
             for batch in batches:
                 batch_dict = batch.to_dict()
 
-                total_files = len(batch.batch_files)
+                total_tasks = len(batch.batch_tasks)
 
-                processed_files = sum(
-                    1 for bf in batch.batch_files if bf.status != BatchFileStatus.QUEUED
+                processed_tasks = sum(
+                    1 for t in batch.batch_tasks if t.status != BatchTaskStatus.QUEUED
                 )
 
-                batch_dict["progress"] = f"{processed_files}/{total_files}"
+                batch_dict["progress"] = f"{processed_tasks}/{total_tasks}"
                 result.append(batch_dict)
             return result
 

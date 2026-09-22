@@ -9,7 +9,7 @@ from batch4llm.manager.file_reader.reader_manager import FileReaderManager
 from batch4llm.manager.llm_client.client_manager import ClientManager
 from batch4llm.manager.prompt_interpreter import interpret_prompt
 from ..manager.database import Database
-from ..manager.database.models.batch import BatchStatus
+from ..manager.database.models.batch import Batch, BatchStatus
 from ..manager.prompt_interpreter.prompt_interpreter import MultiPrompt
 from batch4llm.celery.tasks.submit_provider_batch import submit_provider_batch
 
@@ -142,11 +142,17 @@ class BatchService:
             raise ValueError(
                 f"Batch ID {batch_id} does not exist or user has not the permission"
             )
-        self.db.batches.update_status(batch_id, BatchStatus.STOPPED)
+        if check_batch["status"] in Batch.STOPPED_STATUSES:
+            # Already stopped/completed/failed — nothing to do. Without this
+            # guard, a double-click or slow poll cycle on the client re-runs
+            # the status update and re-logs the "set to STOPPED" message on
+            # every request.
+            return check_batch
+        updated_batch = self.db.batches.update_status(batch_id, BatchStatus.STOPPED)
         self.db.batches.add_batch_log(
             batch_id, "Batch set to 'STOPPED' remaining task will shut down now."
         )
-        return check_batch
+        return updated_batch
 
     def get_batch(self, batch_id: int, user_id: int) -> dict:
         return self.db.batches.get(batch_id, user_id)

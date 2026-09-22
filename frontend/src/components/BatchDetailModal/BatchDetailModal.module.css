@@ -79,6 +79,18 @@
     border: 1px solid #e5e5e5;
     border-radius: 6px;
     overflow: hidden;
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
+}
+.chipClickable {
+    cursor: pointer;
+    transition: color 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+.chipClickable:hover {
+    color: #1e40af;
+    background: #eef2ff;
+    border-color: #c7d2fe;
 }
 .chipKey {
     padding: 3px 7px;
@@ -88,11 +100,17 @@
     letter-spacing: 0.4px;
     color: #aaa;
 }
+.chipClickable:hover .chipKey {
+    color: #6366f1;
+}
 .chipVal {
     padding: 3px 9px;
     font-size: 12px;
     color: #444;
     border-left: 1px solid #e5e5e5;
+}
+.chipClickable:hover .chipVal {
+    color: #1e40af;
 }
 
 .stats { display: flex; gap: 18px; flex-shrink: 0; align-items: center; }
