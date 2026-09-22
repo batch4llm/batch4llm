@@ -107,7 +107,7 @@ def _upload_local_file(client, filename="delete_test.txt"):
     pdf_bytes = open("backend/tests/fixtures/sample-1.pdf", "rb").read()
     r = client.post(
         "/api/files/upload",
-        json={"tags": ["delete_test_tag"]},
+        data={"tags": ["delete_test_tag"]},
         files={"file": (filename, pdf_bytes)},
     )
     assert r.status_code == 200

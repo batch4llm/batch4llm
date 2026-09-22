@@ -7,7 +7,7 @@ def upload_file(authenticated_client):
     pdf_bytes = open("backend/tests/fixtures/sample-1.pdf", "rb").read()
     r = authenticated_client.post(
         "/api/files/upload",
-        json={"tags": ["test_tag"]},
+        data={"tags": ["test_tag"]},
         files={"file": ("test.txt", pdf_bytes)},
     )
     assert r.status_code == 200

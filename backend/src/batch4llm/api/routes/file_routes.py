@@ -81,4 +81,8 @@ def build_file_router(file_service: FileService, jwt_authenticator: JWTAuthentic
 
         return [FileData(**f) for f in files if f.get("tags") and tag in f["tags"]]
 
+    @router.delete("/by-tag/{tag}")
+    def delete_files_by_tag(tag: str, user=Security(jwt_authenticator)):
+        return file_service.delete_files_by_tag(tag, user["id"])
+
     return router

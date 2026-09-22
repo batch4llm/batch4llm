@@ -2,6 +2,7 @@ from typing import Optional, List
 from fastapi import UploadFile
 from ..manager.file_manager import FileManager
 from ..manager.database import Database
+from ..core.exceptions import ResourceInUseError
 
 
 class FileService:
@@ -28,6 +29,20 @@ class FileService:
         if not deleted:
             raise FileNotFoundError(f"File '{file_id}' not found")
         return {"filename": file_id, "status": "deleted"}
+
+    def delete_files_by_tag(self, tag: str, user_id: int) -> dict:
+        matching = [f for f in self.list_files(user_id) if tag in (f.get("tags") or [])]
+
+        deleted: List[int] = []
+        skipped: List[int] = []
+        for f in matching:
+            try:
+                self.file_manager.delete(f["id"], user_id)
+                deleted.append(f["id"])
+            except ResourceInUseError:
+                skipped.append(f["id"])
+
+        return {"deleted": deleted, "skipped": skipped}
 
     def get_file_path(self, file_id: int, user_id: int) -> str:
         file_record = self.db.files.get(file_id, user_id)
