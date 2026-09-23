@@ -25,7 +25,9 @@ class BatchFile(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(nullable=False)
     batch_id: Mapped[int] = mapped_column(ForeignKey("batches.id"), nullable=False)
-    file_id: Mapped[int] = mapped_column(ForeignKey("files.id"), nullable=False)
+    file_id: Mapped[int | None] = mapped_column(
+        ForeignKey("files.id", ondelete="SET NULL"), nullable=True
+    )
     status: Mapped["BatchFileStatus"] = mapped_column(
         Enum(BatchFileStatus, name="batch_file_status_enum"),
         nullable=False,

@@ -32,8 +32,14 @@ class Batch(Base, ResourceMixin):
         Enum(BatchStatus, name="batch_status_enum"), nullable=False
     )
 
-    endpoint_id: Mapped[int] = mapped_column(ForeignKey("endpoints.id"), nullable=False)
-    prompt_id: Mapped[int] = mapped_column(ForeignKey("prompts.id"), nullable=False)
+    endpoint_id: Mapped[int | None] = mapped_column(
+        ForeignKey("endpoints.id", ondelete="SET NULL"), nullable=True
+    )
+    endpoint_name: Mapped[str | None] = mapped_column(nullable=True)
+    prompt_id: Mapped[int | None] = mapped_column(
+        ForeignKey("prompts.id", ondelete="SET NULL"), nullable=True
+    )
+    prompt_name: Mapped[str | None] = mapped_column(nullable=True)
     file_reader: Mapped[str] = mapped_column(nullable=False)
     model: Mapped[str] = mapped_column(nullable=False)
     temperature: Mapped[float] = mapped_column(nullable=False)
@@ -51,8 +57,15 @@ class Batch(Base, ResourceMixin):
     )
     provider_batch_id: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    max_tasks_per_minute: Mapped[int] = mapped_column(Integer, nullable=False)
-    max_parallel_tasks: Mapped[int] = mapped_column(Integer, nullable=False)
+    max_tasks_per_minute: Mapped[float] = mapped_column(Float, nullable=False)
+    allow_concurrency: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+    adaptive_rate_limiting: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+    last_rate_limit_hit_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    last_rate_recovery_at: Mapped[datetime | None] = mapped_column(nullable=True)
     retries_per_failed_task: Mapped[int] = mapped_column(Integer, nullable=False)
     failure_threshold_percent: Mapped[float] = mapped_column(Float, nullable=False)
     queue_batch: Mapped[bool] = mapped_column(Boolean, nullable=False)
@@ -95,6 +108,21 @@ class Batch(Base, ResourceMixin):
         BatchStatus.COMPLETED,
         BatchStatus.FAILED,
     ]
+
+    # ── Adaptive rate limiting tuning (AIMD) ─────────────────────────────
+    # Additive-increase/multiplicative-decrease throttling of
+    # `max_tasks_per_minute` for batches with `adaptive_rate_limiting=True`.
+    # See dispatch_database_tasks.py (pacing/recovery) and
+    # process_single_file.py (backoff on RateLimitError).
+    ADAPTIVE_RATE_START = 5.0
+    ADAPTIVE_RATE_DECREASE_FACTOR = 0.5
+    ADAPTIVE_RATE_RECOVERY_STEP = 1.0
+    ADAPTIVE_RATE_RECOVERY_INTERVAL_SECONDS = 60
+    ADAPTIVE_RATE_COOLDOWN_INTERVALS = 3
+    ADAPTIVE_RATE_SANITY_MAX = 150.0
+    # Below this, a batch is considered permanently rate-limited and is failed.
+    ADAPTIVE_RATE_FAIL_THRESHOLD = 0.025
+    ADAPTIVE_MAX_DISPATCH_SLOTS_PER_TICK = 10
 
 
 class LogLevel(enum.Enum):

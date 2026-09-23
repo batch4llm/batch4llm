@@ -78,18 +78,23 @@ class AnthropicLLMClient(BaseLLMClient):
             else None
         )
 
+        # temperature/top_p/top_k are no longer typed create() params in SDK v1+
+        # (current models ignore them); pass via extra_body for older models that
+        # still honor them. See anthropic-sdk-python MIGRATION.md.
+        extra_body = {"temperature": model_settings.temperature}
+        if model_settings.top_p is not None:
+            extra_body["top_p"] = model_settings.top_p
+        if model_settings.top_k is not None:
+            extra_body["top_k"] = model_settings.top_k
+
         kwargs = {
             "model": model,
             "max_tokens": model_settings.max_output_tokens or 4096,
             "messages": [{"role": "user", "content": user_content}],
-            "temperature": model_settings.temperature,
+            "extra_body": extra_body,
         }
         if system_prompt:
             kwargs["system"] = system_prompt
-        if model_settings.top_p is not None:
-            kwargs["top_p"] = model_settings.top_p
-        if model_settings.top_k is not None:
-            kwargs["top_k"] = model_settings.top_k
 
         try:
             response = self.client.messages.create(**kwargs)

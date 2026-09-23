@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Security
 from fastapi.responses import Response
 
 from batch4llm.service.file_service import FileService
-from batch4llm.api.models.file_models import FileData
+from batch4llm.api.models.file_models import FileData, TagsUpdate
 from fastapi import UploadFile, File, Form
 from typing import Optional, List
 
@@ -41,6 +41,13 @@ def build_file_router(file_service: FileService, jwt_authenticator: JWTAuthentic
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
+    @router.patch("/{file_id}/tags", response_model=FileData)
+    def set_file_tags(file_id: int, body: TagsUpdate, user=Security(jwt_authenticator)):
+        try:
+            return file_service.set_file_tags(file_id, user["id"], body.tags)
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
     @router.delete("/delete/{file_id}")
     def delete_file(file_id: int, user=Security(jwt_authenticator)):
         try:
@@ -73,5 +80,9 @@ def build_file_router(file_service: FileService, jwt_authenticator: JWTAuthentic
         files = file_service.list_files(user["id"])
 
         return [FileData(**f) for f in files if f.get("tags") and tag in f["tags"]]
+
+    @router.delete("/by-tag/{tag}")
+    def delete_files_by_tag(tag: str, user=Security(jwt_authenticator)):
+        return file_service.delete_files_by_tag(tag, user["id"])
 
     return router

@@ -11,6 +11,11 @@ class EndpointRequest(BaseModel):
     token: Optional[str] = Field(None, min_length=3, max_length=300)
 
 
+class EndpointUpdateRequest(BaseModel):
+    url: Optional[str] = Field(None, max_length=300)
+    token: Optional[str] = Field(None, min_length=3, max_length=300)
+
+
 class EndpointResponse(BaseModel):
     id: int
     name: str

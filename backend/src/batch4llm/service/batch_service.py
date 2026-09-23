@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 from typing import Optional
 
@@ -8,11 +9,23 @@ from batch4llm.manager.file_reader.reader_manager import FileReaderManager
 from batch4llm.manager.llm_client.client_manager import ClientManager
 from batch4llm.manager.prompt_interpreter import interpret_prompt
 from ..manager.database import Database
-from ..manager.database.models.batch import BatchStatus
+from ..manager.database.models.batch import Batch, BatchStatus
 from ..manager.prompt_interpreter.prompt_interpreter import MultiPrompt
 from batch4llm.celery.tasks.submit_provider_batch import submit_provider_batch
 
 logger = logging.getLogger(__name__)
+
+_NAME_SANITIZE_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def generate_batch_name(model: str) -> str:
+    """Build a batch name in the ISO 8601 basic format `<model>_<timestamp>`,
+    e.g. "gpt-4o-mini_20260830T142305". The timestamp is sortable and
+    filesystem-safe, and the model slug keeps names readable in listings.
+    """
+    slug = _NAME_SANITIZE_RE.sub("-", model).strip("-_.") or "batch"
+    timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+    return f"{slug}_{timestamp}"
 
 
 class BatchService:
@@ -41,8 +54,11 @@ class BatchService:
         batch_worker_settings,
         use_provider_batch: bool = False,
         scheduled_at: Optional[datetime] = None,
+        name: Optional[str] = None,
     ) -> dict:
-        batch_name = f"batch_{hash(model + str(endpoint_id) + str(prompt_id))}"
+        batch_name = (
+            name.strip() if name and name.strip() else generate_batch_name(model)
+        )
         endpoint = self.endpoint_service.get(endpoint_id, user_id, True)
         if not endpoint:
             raise ValueError(f"Endpoint ID {endpoint_id} does not exist")
@@ -126,11 +142,17 @@ class BatchService:
             raise ValueError(
                 f"Batch ID {batch_id} does not exist or user has not the permission"
             )
-        self.db.batches.update_status(batch_id, BatchStatus.STOPPED)
+        if check_batch["status"] in Batch.STOPPED_STATUSES:
+            # Already stopped/completed/failed — nothing to do. Without this
+            # guard, a double-click or slow poll cycle on the client re-runs
+            # the status update and re-logs the "set to STOPPED" message on
+            # every request.
+            return check_batch
+        updated_batch = self.db.batches.update_status(batch_id, BatchStatus.STOPPED)
         self.db.batches.add_batch_log(
             batch_id, "Batch set to 'STOPPED' remaining task will shut down now."
         )
-        return check_batch
+        return updated_batch
 
     def get_batch(self, batch_id: int, user_id: int) -> dict:
         return self.db.batches.get(batch_id, user_id)

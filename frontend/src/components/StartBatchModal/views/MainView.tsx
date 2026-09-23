@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { ModelInfo } from "../../../types/Model";
 import { logoFor } from "../../../utils/providerLogo";
 import { fmtCost } from "../formatCost.ts";
@@ -10,6 +11,14 @@ import type { ApiParams, FileMode, InvalidField } from "../types.ts";
 import { IconModel, IconFiles, IconPrompt, IconFileHandling, IconPlay, IconSample, IconCheck } from "../Icons.tsx";
 
 type Props = {
+    // Reset
+    onResetAll: () => void;
+
+    // Name
+    batchName: string;
+    onSetBatchName: (v: string) => void;
+    batchNamePlaceholder: string;
+
     // Model
     selectedModel: ModelInfo | null;
     onOpenModel: () => void;
@@ -48,18 +57,16 @@ type Props = {
     // Batch settings
     batchSettingsOpen: boolean;
     onToggleBatchSettings: () => void;
+    adaptiveRateLimiting: boolean;
+    onSetAdaptiveRateLimiting: (v: boolean) => void;
     maxTasksPerMinute: number;
     onSetMaxTasksPerMinute: (v: number) => void;
-    maxParallelTasks: number;
-    onSetMaxParallelTasks: (v: number) => void;
+    allowConcurrency: boolean;
+    onSetAllowConcurrency: (v: boolean) => void;
     retriesPerFailedTask: number;
     onSetRetriesPerFailedTask: (v: number) => void;
     failureThresholdPercent: number;
     onSetFailureThresholdPercent: (v: number) => void;
-    queueBatch: boolean;
-    onSetQueueBatch: (v: boolean) => void;
-    intelligentBackoff: boolean;
-    onSetIntelligentBackoff: (v: boolean) => void;
 
     // Estimate
     estimateOpen: boolean;
@@ -80,6 +87,8 @@ type Props = {
 };
 
 export function MainView({
+    onResetAll,
+    batchName, onSetBatchName, batchNamePlaceholder,
     selectedModel, onOpenModel,
     filesValue, filesSub, onOpenFiles,
     promptValue, promptSub, onOpenPrompt,
@@ -88,20 +97,46 @@ export function MainView({
     modelSettingsOpen, onToggleModelSettings, jsonFormat, onSetJsonFormat,
     temperature, onSetTemperature, apiParams, onActivateParam, onResetParam,
     batchSettingsOpen, onToggleBatchSettings,
+    adaptiveRateLimiting, onSetAdaptiveRateLimiting,
     maxTasksPerMinute, onSetMaxTasksPerMinute,
-    maxParallelTasks, onSetMaxParallelTasks,
+    allowConcurrency, onSetAllowConcurrency,
     retriesPerFailedTask, onSetRetriesPerFailedTask,
     failureThresholdPercent, onSetFailureThresholdPercent,
-    queueBatch, onSetQueueBatch,
-    intelligentBackoff, onSetIntelligentBackoff,
     estimateOpen, onToggleEstimate, onRunEstimate, sampleOutputSet, onOpenSampleOutput,
     scheduleActive, onToggleSchedule, providerActive, onToggleProviderBatch,
     scheduledAt, onSetScheduledAt, onStart, submitting,
 }: Props) {
+    const scheduleBoxRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (scheduleActive || providerActive) {
+            scheduleBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+    }, [scheduleActive, providerActive]);
+
     return (
         <div className={styles.view}>
-            <h2 className={styles.mainTitle}>Start Batch</h2>
-            <p className={styles.mainSub}>Configure and launch a new file batch.</p>
+            <div className={styles.mainHeaderRow}>
+                <div>
+                    <h2 className={styles.mainTitle}>Start Batch</h2>
+                    <p className={styles.mainSub}>Configure and launch a new file batch.</p>
+                </div>
+                <button type="button" className={styles.resetAllBtn} onClick={onResetAll}>
+                    Reset all
+                </button>
+            </div>
+
+            <div className={styles.nameField}>
+                <label className={styles.nameFieldLabel}>Batch Name</label>
+                <input
+                    type="text"
+                    className={styles.fieldInput}
+                    value={batchName}
+                    placeholder={batchNamePlaceholder}
+                    maxLength={200}
+                    onChange={(e) => onSetBatchName(e.target.value)}
+                />
+            </div>
 
             <div className={styles.selectorStack}>
                 <SelectorRow
@@ -246,10 +281,24 @@ export function MainView({
 
             {/* Batch Settings */}
             <Collapsible title="Batch Settings" open={batchSettingsOpen} onToggle={onToggleBatchSettings}>
+                <div className={styles.primarySwitchRow}>
+                    <div className={styles.fieldLabelWrap}>
+                        <span className={styles.primarySwitchLabel}>Adaptive Rate Limiting</span>
+                        <button type="button" className={styles.mpInfo} title="Automatically slows down dispatch when rate-limit errors occur, then speeds back up as errors clear. Recommended for almost all batches.">?</button>
+                    </div>
+                    <button
+                        type="button"
+                        className={`${styles.switch}${adaptiveRateLimiting ? ` ${styles.active}` : ""}`}
+                        onClick={() => onSetAdaptiveRateLimiting(!adaptiveRateLimiting)}
+                    >
+                        <span className={styles.switchThumb} />
+                    </button>
+                </div>
+
                 <div className={styles.fieldRow}>
                     <div className={styles.fieldLabelWrap}>
-                        <label className={styles.fieldLabel}>Max Tasks / min</label>
-                        <button type="button" className={styles.mpInfo} title="How many tasks are dispatched per minute. Lower values reduce load on the provider.">?</button>
+                        <label className={styles.fieldLabel}>Tasks / min</label>
+                        <button type="button" className={styles.mpInfo} title="Starting point for how many tasks are dispatched per minute. With Adaptive Rate Limiting on, this is only the starting rate - it is adjusted automatically from here.">?</button>
                     </div>
                     <input
                         type="number" className={`${styles.fieldInput} ${styles.fieldInputSm}`}
@@ -258,16 +307,18 @@ export function MainView({
                     />
                 </div>
 
-                <div className={styles.fieldRow}>
+                <div className={styles.switchRow}>
                     <div className={styles.fieldLabelWrap}>
-                        <label className={styles.fieldLabel}>Max Parallel Tasks</label>
-                        <button type="button" className={styles.mpInfo} title="How many tasks run concurrently. Keep low to avoid rate-limit errors.">?</button>
+                        <span className={styles.switchLabel}>Allow Concurrency</span>
+                        <button type="button" className={styles.mpInfo} title="If enabled, multiple tasks may run at the same time. Disable to force one request at a time, for providers that don't tolerate concurrent requests.">?</button>
                     </div>
-                    <input
-                        type="number" className={`${styles.fieldInput} ${styles.fieldInputSm}`}
-                        min={1} max={20} value={maxParallelTasks}
-                        onChange={(e) => onSetMaxParallelTasks(parseInt(e.target.value) || 1)}
-                    />
+                    <button
+                        type="button"
+                        className={`${styles.switch}${allowConcurrency ? ` ${styles.active}` : ""}`}
+                        onClick={() => onSetAllowConcurrency(!allowConcurrency)}
+                    >
+                        <span className={styles.switchThumb} />
+                    </button>
                 </div>
 
                 <div className={styles.fieldRow}>
@@ -298,37 +349,8 @@ export function MainView({
                         </span>
                     </div>
                 </div>
-                <div style={{ fontSize: 11, color: "#aaa", marginBottom: 12, paddingLeft: 2 }}>
+                <div style={{ fontSize: 11, color: "#aaa", paddingLeft: 2 }}>
                     At {failureThresholdPercent}%: batch cancels after {failureThresholdPercent} of 100 tasks fail.
-                </div>
-
-                <div className={styles.fieldRow}>
-                    <div className={styles.fieldLabelWrap}>
-                        <label className={styles.fieldLabel}>Queue Batch</label>
-                        <button type="button" className={styles.mpInfo} title="If enabled, the batch waits in queue instead of starting immediately when resources are limited.">?</button>
-                    </div>
-                    <select
-                        className={`${styles.fieldInput} ${styles.fieldInputSm}`} style={{ maxWidth: 100 }}
-                        value={queueBatch ? "true" : "false"}
-                        onChange={(e) => onSetQueueBatch(e.target.value === "true")}
-                    >
-                        <option value="true">Yes</option>
-                        <option value="false">No</option>
-                    </select>
-                </div>
-
-                <div className={styles.switchRow}>
-                    <div className={styles.fieldLabelWrap}>
-                        <span className={styles.switchLabel}>Intelligent Backoff</span>
-                        <button type="button" className={styles.mpInfo} title="Automatically slows down dispatch when rate-limit errors occur, then speeds back up as errors clear.">?</button>
-                    </div>
-                    <button
-                        type="button"
-                        className={`${styles.switch}${intelligentBackoff ? ` ${styles.active}` : ""}`}
-                        onClick={() => onSetIntelligentBackoff(!intelligentBackoff)}
-                    >
-                        <span className={styles.switchThumb} />
-                    </button>
                 </div>
             </Collapsible>
 
@@ -374,7 +396,7 @@ export function MainView({
             </div>
 
             {scheduleActive && (
-                <div className={`${styles.scheduleBox}${invalid.schedule ? ` ${styles.invalid}` : ""}`}>
+                <div ref={scheduleBoxRef} className={`${styles.scheduleBox}${invalid.schedule ? ` ${styles.invalid}` : ""}`}>
                     <div className={styles.scheduleLabel}>Schedule for</div>
                     <input
                         type="datetime-local"
@@ -387,7 +409,7 @@ export function MainView({
             )}
 
             {providerActive && (
-                <div className={styles.scheduleBox}>
+                <div ref={scheduleBoxRef} className={styles.scheduleBox}>
                     <div className={styles.scheduleLabel}>Provider Batch</div>
                     <p className={styles.scheduleInfo}>
                         The batch is submitted as a single provider-side batch job (e.g. OpenAI Batch API). Lower cost, but results arrive asynchronously — usually within 24 hours.

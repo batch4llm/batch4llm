@@ -1,6 +1,6 @@
 import styles from "./FileTag.module.css";
 
-const COLOR_COUNT = 8;
+const COLOR_COUNT = 7;
 
 export function tagColorIndex(tag: string): number {
     let h = 0;
@@ -12,21 +12,38 @@ type FileTagProps = {
     tag: string;
     filter?: boolean;
     active?: boolean;
+    size?: "sm" | "lg";
+    count?: number;
     onClick?: () => void;
+    onRemove?: () => void;
 };
 
-export function FileTag({ tag, filter = false, active = true, onClick }: FileTagProps) {
+export function FileTag({ tag, filter = false, active = true, size = "sm", count, onClick, onRemove }: FileTagProps) {
     const ci = tagColorIndex(tag);
     const cls = [
         styles.tag,
         styles[`tagC${ci}`],
         filter ? styles.filterTag : "",
         filter && !active ? styles.inactiveTag : "",
+        size === "lg" ? styles.lgTag : "",
     ].filter(Boolean).join(" ");
     return (
         <span className={cls} onClick={onClick}>
             <span className={styles.tagDot} />
             {tag}
+            {count !== undefined && (
+                <span className={styles.tagCount}>{count} file{count === 1 ? "" : "s"}</span>
+            )}
+            {onRemove && (
+                <button
+                    type="button"
+                    className={styles.tagRemove}
+                    onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                    aria-label={`Remove tag ${tag}`}
+                >
+                    ×
+                </button>
+            )}
         </span>
     );
 }

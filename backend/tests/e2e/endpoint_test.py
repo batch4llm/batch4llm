@@ -26,6 +26,16 @@ def test_endpoint_workflow(authenticated_client):
     assert r.status_code == 200
     assert endpoint_id in [item["id"] for item in r.json()]
 
+    # Update the endpoint's URL and token
+    r = authenticated_client.patch(
+        f"/api/endpoints/{endpoint_id}",
+        json={"url": "https://new-url.example.com", "token": "new-token-123"},
+    )
+    assert r.status_code == 200
+    updated = r.json()
+    assert updated["url"] == "https://new-url.example.com"
+    assert updated["token"] != "new-token-123"  # returned masked, not verbatim
+
     # Delete the endpoint
     r = authenticated_client.delete(f"/api/endpoints/delete/{endpoint_id}")
     assert r.status_code == 200

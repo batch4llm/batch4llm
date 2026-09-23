@@ -4,7 +4,6 @@ from datetime import datetime
 
 from sqlalchemy import create_engine, event, exc
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from sqlalchemy.pool import StaticPool
 from sqlalchemy import DateTime
 
 
@@ -14,9 +13,9 @@ class Base(DeclarativeBase):
     }
 
 
-# Real (non-sqlite-in-memory) engines created via get_session(), tracked so a
-# Celery worker_process_init hook can dispose() them after fork without every
-# caller needing to keep its own reference to the engine.
+# Engines created via get_session(), tracked so a Celery worker_process_init
+# hook can dispose() them after fork without every caller needing to keep
+# its own reference to the engine.
 _ENGINES: list = []
 
 
@@ -55,28 +54,14 @@ def _guard_against_forked_connections(engine):
             )
 
 
-def get_session(db_path: str = "sqlite:///batch4llm.db"):
-    if db_path.startswith("sqlite:///:memory:"):
-        # Special handling for in-memory DB
-        engine = create_engine(
-            "sqlite:///:memory:",
-            connect_args={"check_same_thread": False},
-            poolclass=StaticPool,
-        )
-    else:
-        connect_args = {}
-        if db_path.startswith("sqlite://"):
-            connect_args["check_same_thread"] = False
+def get_session(db_path: str):
+    engine = create_engine(
+        db_path,
+        pool_size=3,
+        max_overflow=5,
+        pool_pre_ping=True,
+    )
+    _guard_against_forked_connections(engine)
+    _ENGINES.append(engine)
 
-        engine = create_engine(
-            db_path,
-            connect_args=connect_args,
-            pool_size=3,
-            max_overflow=5,
-            pool_pre_ping=True,
-        )
-        _guard_against_forked_connections(engine)
-        _ENGINES.append(engine)
-
-    Base.metadata.create_all(engine)
     return sessionmaker(bind=engine, expire_on_commit=False)

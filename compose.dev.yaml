@@ -1,4 +1,11 @@
 services:
+  migrate:
+    build:
+      context: ./backend
+      target: dev
+    volumes:
+      - ./backend/src:/app/src
+
   backend:
     build:
       context: ./backend

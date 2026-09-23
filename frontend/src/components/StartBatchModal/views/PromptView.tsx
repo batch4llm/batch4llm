@@ -12,12 +12,14 @@ type Props = {
 
 export function PromptView({ prompts, loading, selectedPrompt, onSelect, onBack }: Props) {
     return (
-        <div className={styles.view}>
-            <div className={styles.viewHeader}>
-                <button type="button" className={styles.backBtn} onClick={onBack}>
-                    <IconBack /> Back
-                </button>
-                <h2 className={styles.viewTitle}>Select Prompt</h2>
+        <div className={`${styles.view} ${styles.viewFlushTop}`}>
+            <div className={styles.stickyHeader}>
+                <div className={styles.viewHeader}>
+                    <button type="button" className={styles.backBtn} onClick={onBack}>
+                        <IconBack /> Back
+                    </button>
+                    <h2 className={styles.viewTitle}>Select Prompt</h2>
+                </div>
             </div>
 
             <div className={styles.cardList}>

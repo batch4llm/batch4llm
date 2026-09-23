@@ -1,5 +1,6 @@
-import json
 from dataclasses import dataclass
+
+import yaml
 
 
 @dataclass
@@ -10,32 +11,34 @@ class MultiPrompt:
 
 def interpret_prompt(prompt: str) -> list[MultiPrompt]:
     try:
-        data = json.loads(prompt)
+        data = yaml.safe_load(prompt)
+    except yaml.YAMLError:
+        raise ValueError("The prompt format is not valid yaml")
 
-        result = []
+    if not isinstance(data, dict):
+        raise ValueError("The prompt format is not recognized")
 
-        multi_prompt = data.get("multi_prompt_v1", {})
-        if not multi_prompt:
-            raise ValueError("The prompt format is not recognized")
+    result = []
 
-        pre = multi_prompt.get("pre", "")
-        post = multi_prompt.get("post", "")
+    multi_prompt = data.get("multi_prompt_v1", {})
+    if not multi_prompt:
+        raise ValueError("The prompt format is not recognized")
 
-        tasks = multi_prompt.get("tasks", [])
-        if len(tasks) == 0:
-            raise ValueError("At least one task is required!")
+    pre = multi_prompt.get("pre") or ""
+    post = multi_prompt.get("post") or ""
 
-        for task in tasks:
-            task_prompt = task.get("prompt", "")
-            task_id = task.get("id", "")
+    tasks = multi_prompt.get("tasks", [])
+    if not tasks:
+        raise ValueError("At least one task is required!")
 
-            full_prompt = f"{pre}\n{task_prompt}\n{post}".strip()
-            result.append(MultiPrompt(task_id, full_prompt))
+    for task in tasks:
+        task_prompt = task.get("prompt", "")
+        task_id = task.get("id", "")
 
-        return result
+        full_prompt = f"{pre}\n{task_prompt}\n{post}".strip()
+        result.append(MultiPrompt(task_id, full_prompt))
 
-    except json.JSONDecodeError:
-        raise ValueError("The prompt format is not json")
+    return result
 
 
 def check_prompt(prompt: str) -> bool:

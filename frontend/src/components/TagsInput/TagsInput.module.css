@@ -1,0 +1,27 @@
+.wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 6px 8px;
+    background: #fff;
+}
+
+.wrapper:focus-within {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+}
+
+.input {
+    flex: 1 1 80px;
+    min-width: 80px;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    font-family: inherit;
+    padding: 2px;
+    margin: 0;
+    background: transparent;
+}

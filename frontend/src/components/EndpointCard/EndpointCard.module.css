@@ -158,3 +158,32 @@
     font-family: var(--font-base);
     font-style: italic;
 }
+
+/* ── Actions ──────────────────────────────── */
+.actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.deleteBtn {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: #aaa;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+.deleteBtn svg { width: 14px; height: 14px; }
+
+.deleteBtn:hover {
+    background: #fdecec;
+    color: #c53030;
+    border-color: #f6d4d4;
+}

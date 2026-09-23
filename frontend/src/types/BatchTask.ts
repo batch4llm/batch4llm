@@ -43,7 +43,8 @@ export interface BatchTaskDetail {
     id: number;
     batch_id: number;
     batch_file_id: number;
-    file_id: number;
+    /** Null once the source file has been deleted. */
+    file_id: number | null;
     status: BatchTaskStatus;
     prompt_marker?: string;
     depends_on_batch_task_id?: number;

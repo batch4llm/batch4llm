@@ -19,6 +19,26 @@
   flex-shrink: 0;
 }
 
+.tagRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  margin: 0 -2px 0 1px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.tagRemove:hover { opacity: 1; background: rgba(0, 0, 0, 0.08); }
+
 .filterTag {
   cursor: pointer;
   font-size: 11px;
@@ -27,6 +47,24 @@
 }
 
 .filterTag:hover { transform: translateY(-1px); }
+
+.lgTag {
+  font-size: 13px;
+  padding: 8px 12px 8px 10px;
+  border-radius: 9px;
+  gap: 7px;
+}
+
+.lgTag .tagDot {
+  width: 7px;
+  height: 7px;
+}
+
+.tagCount {
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9em;
+}
 
 /* Inactive filter tag — overrides color classes via !important */
 .inactiveTag {
@@ -37,20 +75,18 @@
 
 .inactiveTag .tagDot { opacity: 0.45; }
 
-/* 8 rotating color slots */
+/* 7 rotating color slots — no grey, kept to colors typical of marker/highlighter pens */
 .tagC0 { color: #1d4ed8; background: #eff4ff; border-color: #dbe6ff; }
 .tagC0 .tagDot { background: #2563eb; }
 .tagC1 { color: #6d28d9; background: #f5f0ff; border-color: #e7dcff; }
 .tagC1 .tagDot { background: #7c3aed; }
 .tagC2 { color: #92400e; background: #fdf6e6; border-color: #f6e6c2; }
 .tagC2 .tagDot { background: #d97706; }
-.tagC3 { color: #555; background: #f4f4f4; border-color: #e5e5e5; }
-.tagC3 .tagDot { background: #888; }
-.tagC4 { color: #047857; background: #ecfaf2; border-color: #cdeedc; }
-.tagC4 .tagDot { background: #16a34a; }
-.tagC5 { color: #be185d; background: #fdf0f6; border-color: #f6d6e5; }
-.tagC5 .tagDot { background: #db2777; }
-.tagC6 { color: #115e59; background: #ecfafa; border-color: #c4ebe8; }
-.tagC6 .tagDot { background: #0d9488; }
-.tagC7 { color: #b76ecf; background: #fff5e1; border-color: #dcb9e8; }
-.tagC7 .tagDot { background: #b688d1; }
+.tagC3 { color: #047857; background: #ecfaf2; border-color: #cdeedc; }
+.tagC3 .tagDot { background: #16a34a; }
+.tagC4 { color: #be185d; background: #fdf0f6; border-color: #f6d6e5; }
+.tagC4 .tagDot { background: #db2777; }
+.tagC5 { color: #115e59; background: #ecfafa; border-color: #c4ebe8; }
+.tagC5 .tagDot { background: #0d9488; }
+.tagC6 { color: #b91c1c; background: #fef2f2; border-color: #f6cccc; }
+.tagC6 .tagDot { background: #dc2626; }

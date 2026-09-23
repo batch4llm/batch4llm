@@ -215,6 +215,14 @@
     letter-spacing: 0.2px;
     flex: none;
 }
+.chevron {
+    flex: none;
+    color: var(--text-muted);
+    transition: transform var(--transition-fast);
+}
+.isExpanded .chevron {
+    transform: rotate(180deg);
+}
 
 /* ─── Sub-meta row ────────────────────────────────────────────────────────── */
 .sub {
@@ -232,19 +240,14 @@
     color: var(--color-navy-700);
     font-size: 11.5px;
 }
-.metaLink {
-    background: none;
-    border: none;
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-    font-family: inherit;
-    font-size: inherit;
+.metaText {
     color: var(--text-muted);
-    cursor: pointer;
-    transition: color var(--transition-fast);
 }
-.metaLink:hover { color: var(--color-click); }
+.metaTextDeleted {
+    color: var(--text-muted);
+    font-style: italic;
+    opacity: 0.7;
+}
 
 /* ─── Stats row ───────────────────────────────────────────────────────────── */
 .stats {
@@ -341,39 +344,36 @@
     to   { background-position: 22.6px 0; }
 }
 
-/* ─── Action buttons (hover-revealed) ────────────────────────────────────── */
-.actions {
-    position: absolute;
-    right: 14px;
-    top: 50%;
-    transform: translateY(-50%) translateX(4px);
+/* ─── Action panel (revealed when card is expanded) ──────────────────────── */
+.actionsPanel {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
     display: flex;
-    gap: 4px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    flex-wrap: wrap;
+    gap: 8px;
+    cursor: default;
+    animation: expandIn 0.15s ease;
 }
-.card:hover .actions,
-.card:focus-within .actions {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(-50%);
+@keyframes expandIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-.ic {
-    height: 30px;
-    min-width: 30px;
-    padding: 0 7px;
+.actionBtn {
+    height: 32px;
+    padding: 0 12px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 6px;
     background: var(--color-card-bg);
     border: 1.5px solid var(--color-border);
     border-radius: var(--radius-sm);
-    color: #555;
+    color: var(--color-text);
     font-family: inherit;
-    font-size: 12px;
+    font-size: 12.5px;
+    font-weight: 500;
     cursor: pointer;
     transition:
         background var(--transition-fast),
@@ -383,23 +383,30 @@
     box-shadow: none;
     margin: 0;
 }
-.ic svg { width: 14px; height: 14px; }
-.ic:hover {
+.actionBtn svg { width: 14px; height: 14px; }
+.actionBtn:hover {
     background: var(--color-bg);
     border-color: var(--border-hover);
-    color: var(--color-text);
 }
-.ic:active { transform: scale(var(--press-scale)); }
-.ic:focus-visible {
+.actionBtn:active { transform: scale(var(--press-scale)); }
+.actionBtn:focus-visible {
     outline: none;
     border-color: var(--color-selectable);
     box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
-.icStop:hover {
+.actionBtnStop {
+    color: #a82626;
+    border-color: #f3c9c9;
+}
+.actionBtnStop:hover {
     background: #fdecec;
     border-color: var(--s-failed-color);
-    color: #a82626;
+}
+.actionBtn:disabled {
+    opacity: 0.6;
+    cursor: default;
+    pointer-events: none;
 }
 
 /* ─── Empty state ─────────────────────────────────────────────────────────── */

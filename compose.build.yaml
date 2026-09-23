@@ -1,4 +1,7 @@
 services:
+  migrate:
+    build: ./backend
+
   backend:
     build: ./backend
 

@@ -23,19 +23,23 @@ b4 = "batch4llm.cli:app"
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "pytest-cov",
-    "pytest-mock",
-    "httpx",
-    "black",
-    "ruff",
-    "pre-commit",
-    "celery-types",
+    "pytest==9.1.1",
+    "pytest-cov==7.1.0",
+    "pytest-mock==3.15.1",
+    "httpx==0.28.1",
+    "black==26.5.1",
+    "ruff==0.16.8",
+    "pre-commit==4.6.2",
+    "celery-types==0.26.0",
+    "python-dotenv==1.2.3",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+markers = [
+    "real_api: hits real LLM provider APIs, costs money, skipped when the required API key is not set",
+]
 
 [tool.black]
 line-length = 88

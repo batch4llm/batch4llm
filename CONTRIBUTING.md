@@ -50,6 +50,20 @@ Or simply `make dev` (see [Makefile](Makefile) for shortcuts, incl. `make test` 
 
 Everything runs via Docker. The frontend uses Vite with HMR and is available at `http://localhost:80`. Changes in `frontend/src` are reflected immediately in the browser.
 
+## Database migrations
+
+Schema changes are managed with Alembic. `docker compose up` (and `make dev`) always applies pending migrations automatically via the `migrate` service before `backend`/`worker`/`beat` start — you no longer need to drop and recreate your local Postgres.
+
+After changing a model in `backend/src/batch4llm/manager/database/models/`, generate a migration against the running dev stack and commit the result:
+
+```bash
+docker compose -f compose.yaml -f compose.build.yaml -f compose.dev.yaml exec backend b4llm db revision --autogenerate -m "add foo column"
+```
+
+Review the generated file under `backend/src/batch4llm/migrations/versions/` before committing — Alembic's autogenerate doesn't always get everything right (e.g. data migrations, some enum/constraint changes).
+
+Other useful commands (run the same way, via `exec backend b4llm db ...`): `current`, `history`, `downgrade <rev>`, `stamp <rev>`.
+
 ## Tests
 
 ```bash

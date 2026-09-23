@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from batch4llm.celery.worker import app
 from batch4llm.celery.tasks import process_single_file
@@ -6,7 +6,7 @@ from batch4llm.celery.tasks.submit_provider_batch import submit_provider_batch
 from celery.utils.log import get_task_logger
 from batch4llm.config import ServiceSettings
 from batch4llm.manager.database import Database
-from batch4llm.manager.database.models.batch import BatchStatus, LogLevel
+from batch4llm.manager.database.models.batch import Batch, BatchStatus, LogLevel
 from batch4llm.manager.database.models.batch_file import BatchFileStatus
 from batch4llm.manager.database.models.llm_request import LlmRequestStatus
 
@@ -83,20 +83,74 @@ def dispatch_database_tasks():
                 )
                 # todo: set remaining batch files failed
                 # todo: set remaining batch tasks failed
+                continue
+
+        now = datetime.now(timezone.utc)
+
+        if batch.adaptive_rate_limiting:
+            in_cooldown = False
+            if batch.last_rate_limit_hit_at is not None:
+                cooldown_seconds = Batch.ADAPTIVE_RATE_COOLDOWN_INTERVALS * (
+                    60.0 / batch.max_tasks_per_minute
+                )
+                in_cooldown = now < batch.last_rate_limit_hit_at + timedelta(
+                    seconds=cooldown_seconds
+                )
+
+            if in_cooldown:
+                # Still backing off from a recent rate-limit hit: dispatch
+                # nothing for this batch this tick.
+                continue
+
+            batch = db.batches.advance_rate_recovery(batch.id)
 
         if (
-            db.worker.count_running_requests_on_batch(batch.id)
-            >= batch.max_parallel_tasks
-        ):
-            continue
-        if (
-            db.worker.count_started_in_last_minute_requests_on_batch(batch.id)
-            >= batch.max_tasks_per_minute
+            not batch.allow_concurrency
+            and db.worker.count_running_requests_on_batch(batch.id) >= 1
         ):
             continue
 
-        request = db.worker.get_queued_llm_request_from_batch(batch.id)
-        if request:
+        # Pacing: how many slots have accumulated since the last dispatched
+        # request, given the batch's current (possibly AIMD-adjusted) rate.
+        # This replaces a fixed per-tick dispatch with a token-bucket style
+        # catch-up, so the effective rate isn't capped by this task's own
+        # 5s schedule - and works just as well for sub-1/min rates.
+        interval_seconds = 60.0 / batch.max_tasks_per_minute
+        last_started_at = db.worker.get_last_request_started_at_for_batch(batch.id)
+        if last_started_at is None:
+            available_slots = 1
+        else:
+            elapsed_seconds = (now - last_started_at).total_seconds()
+            if (
+                batch.adaptive_rate_limiting
+                and batch.last_rate_limit_hit_at is not None
+            ):
+                # Don't credit backlog that accumulated while dispatch was
+                # paused during a rate-limit cooldown - otherwise the pause
+                # itself builds up slack that fires as a burst the moment
+                # the cooldown ends, immediately re-triggering the limit.
+                cooldown_seconds = Batch.ADAPTIVE_RATE_COOLDOWN_INTERVALS * (
+                    60.0 / batch.max_tasks_per_minute
+                )
+                cooldown_ended_at = batch.last_rate_limit_hit_at + timedelta(
+                    seconds=cooldown_seconds
+                )
+                elapsed_seconds = min(
+                    elapsed_seconds, (now - cooldown_ended_at).total_seconds()
+                )
+            available_slots = int(elapsed_seconds // interval_seconds)
+
+        if not batch.allow_concurrency:
+            available_slots = min(available_slots, 1)
+        available_slots = min(
+            available_slots, Batch.ADAPTIVE_MAX_DISPATCH_SLOTS_PER_TICK
+        )
+
+        for _ in range(max(0, available_slots)):
+            request = db.worker.get_queued_llm_request_from_batch(batch.id)
+            if not request:
+                break
+
             endpoint = db.worker.get_endpoint(batch.endpoint_id)
             file_path = db.worker.get_file_path(request.batch_task.file_id)
             worker_task = process_single_file.delay(

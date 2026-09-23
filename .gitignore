@@ -58,8 +58,6 @@ cover/
 # Django stuff:
 *.log
 local_settings.py
-db.sqlite3
-db.sqlite3-journal
 
 # Flask stuff:
 instance/
@@ -209,3 +207,5 @@ __marimo__/
 # JetBrains IDE project files
 /.idea
 /data/
+
+.vscode/settings.json

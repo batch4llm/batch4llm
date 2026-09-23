@@ -54,6 +54,15 @@ class LoginService:
         )
         return True
 
+    def ensure_bootstrap_admin(self, username: str, password: str) -> bool:
+        """Create an admin user with the given credentials unless a user with
+        that username already exists. Returns True if a user was created,
+        False if it already existed (existing users are left untouched)."""
+        if self.db.users.get_by_username(username=username):
+            return False
+        self.register_user(username, password, is_admin=True)
+        return True
+
     def reset_password(self, username: str, new_password: str):
         user = self.db.users.get_by_username(username=username)
         if not user:

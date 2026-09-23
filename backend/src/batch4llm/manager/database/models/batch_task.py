@@ -29,8 +29,12 @@ class BatchTask(Base):
     batch_file_id: Mapped[int] = mapped_column(
         ForeignKey("batch_files.id"), nullable=False
     )
-    file_id: Mapped[int] = mapped_column(ForeignKey("files.id"), nullable=False)
-    endpoint_id: Mapped[int] = mapped_column(ForeignKey("endpoints.id"), nullable=False)
+    file_id: Mapped[int | None] = mapped_column(
+        ForeignKey("files.id", ondelete="SET NULL"), nullable=True
+    )
+    endpoint_id: Mapped[int | None] = mapped_column(
+        ForeignKey("endpoints.id", ondelete="SET NULL"), nullable=True
+    )
 
     status: Mapped["BatchTaskStatus"] = mapped_column(
         Enum(BatchTaskStatus, name="batch_task_status_enum"),

@@ -1,0 +1,35 @@
+name: Real API tests
+
+# Manual only — never runs on push/PR. Hits real provider APIs and costs
+# real money, so it must be started deliberately from the Actions tab.
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # Configure this environment under Settings > Environments if you want
+    # required reviewers to approve each run before the secrets are exposed.
+    environment: real-api-tests
+
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install ./backend[dev]
+
+      - name: run real API tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: pytest backend/tests/integration -m real_api -v --config-file=backend/pyproject.toml

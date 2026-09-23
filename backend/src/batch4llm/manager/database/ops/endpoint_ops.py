@@ -1,8 +1,8 @@
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
-from batch4llm.core.exceptions import NameAlreadyExistsError, ResourceInUseError
+from batch4llm.core.exceptions import ResourceInUseError
 from batch4llm.manager.database.models.batch import Batch
+from batch4llm.manager.database.models.batch_task import BatchTask
 from batch4llm.manager.database.models.endpoint import Endpoint
 from batch4llm.manager.database.ops.user_ops import get_group_id_subquery
 
@@ -26,11 +26,7 @@ class EndpointOps:
                 group_id=subq,
             )
             session.add(ep)
-            try:
-                session.commit()
-            except IntegrityError:
-                session.rollback()
-                raise NameAlreadyExistsError(name)
+            session.commit()
             return ep.to_dict_public()
 
     def get(self, endpoint_id: int, user_id: int, show_api=False):
@@ -49,6 +45,18 @@ class EndpointOps:
             query = Endpoint.accessible_by(session.query(Endpoint), user_id)
             query = Endpoint.filter_archived(query, archived)
             return [e.to_dict_public() for e in query.all()]
+
+    def update(self, endpoint_id: int, user_id: int, **fields) -> dict:
+        with self.SessionLocal() as session:
+            query = session.query(Endpoint).filter_by(id=endpoint_id)
+            ep = Endpoint.accessible_by(query, user_id).first()
+            if not ep:
+                raise ValueError(f"Endpoint ID '{endpoint_id}' not found.")
+            for key, value in fields.items():
+                setattr(ep, key, value or None)
+            session.commit()
+            session.refresh(ep)
+            return ep.to_dict_internal()
 
     def set_archived(self, endpoint_id: int, user_id: int, archived: bool) -> dict:
         with self.SessionLocal() as session:
@@ -80,11 +88,24 @@ class EndpointOps:
 
             if not ep:
                 raise ValueError(f"Endpoint ID '{endpoint_id}' not found.")
-            in_use = session.query(Batch).filter_by(endpoint_id=endpoint_id).first()
+            in_use = (
+                session.query(Batch)
+                .filter(
+                    Batch.endpoint_id == endpoint_id,
+                    Batch.status.in_(Batch.ACTIVE_STATUSES),
+                )
+                .first()
+            )
             if in_use:
                 raise ResourceInUseError(
-                    f"Endpoint '{endpoint_id}' is still referenced by a batch and cannot be deleted."
+                    f"Endpoint '{endpoint_id}' is still used by an active batch and cannot be deleted."
                 )
+            session.query(Batch).filter_by(endpoint_id=endpoint_id).update(
+                {"endpoint_id": None}
+            )
+            session.query(BatchTask).filter_by(endpoint_id=endpoint_id).update(
+                {"endpoint_id": None}
+            )
             session.delete(ep)
             session.commit()
             return ep.to_dict_public()

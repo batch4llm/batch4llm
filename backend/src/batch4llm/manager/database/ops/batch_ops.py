@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 from sqlalchemy import func, asc
@@ -53,11 +53,18 @@ class BatchOps:
         with self.SessionLocal() as session:
             subq = get_group_id_subquery(session, user_id)
 
+            endpoint_name = (
+                session.query(Endpoint.name).filter_by(id=endpoint_id).scalar()
+            )
+            prompt_name = session.query(Prompt.name).filter_by(id=prompt_id).scalar()
+
             batch = Batch(
                 name=name,
                 status=status,
                 endpoint_id=endpoint_id,
+                endpoint_name=endpoint_name,
                 prompt_id=prompt_id,
+                prompt_name=prompt_name,
                 file_reader=file_reader,
                 model=model,
                 temperature=temperature,
@@ -67,7 +74,8 @@ class BatchOps:
                 use_provider_batch=use_provider_batch,
                 scheduled_at=scheduled_at,
                 max_tasks_per_minute=batch_worker_settings.max_tasks_per_minute,
-                max_parallel_tasks=batch_worker_settings.max_parallel_tasks,
+                allow_concurrency=batch_worker_settings.allow_concurrency,
+                adaptive_rate_limiting=batch_worker_settings.adaptive_rate_limiting,
                 retries_per_failed_task=batch_worker_settings.retries_per_failed_task,
                 failure_threshold_percent=batch_worker_settings.failure_threshold_percent,
                 queue_batch=batch_worker_settings.queue_batch,
@@ -186,6 +194,7 @@ class BatchOps:
         worker_task_id: str = None,
         engine_response: LLMClientResponse = None,
         costs_in_usd: float = None,
+        error: str = None,
     ):
         with self.SessionLocal() as session:
             llm_request = session.get(LlmRequest, llm_request_id)
@@ -209,6 +218,9 @@ class BatchOps:
             if worker_task_id:
                 llm_request.worker_task_id = worker_task_id
 
+            if error is not None:
+                llm_request.error = error
+
             def _sanitize(value: str | None) -> str | None:
                 if isinstance(value, str):
                     return value.replace("\x00", "")
@@ -229,26 +241,105 @@ class BatchOps:
                 batch_task.status = BatchTaskStatus.COMPLETED
                 batch_task.stopped_at = func.now()
 
-            elif status == LlmRequestStatus.FAILED:
-                retry_count = (
-                    session.query(func.count(LlmRequest.id))
-                    .filter(LlmRequest.batch_task_id == batch_task.id)
-                    .scalar()
-                )
-                if retry_count <= batch.retries_per_failed_task:
-                    new_request = LlmRequest(
-                        batch_task_id=batch_task.id,
-                        prompt=llm_request.prompt,
-                        status=LlmRequestStatus.QUEUED,
-                    )
-                    session.add(new_request)
-                else:
-                    batch_task.status = BatchTaskStatus.FAILED
-                    batch_task.stopped_at = func.now()
-
             session.commit()
             session.refresh(llm_request)
             return llm_request
+
+    def create_retry_request(self, batch_task_id: int, prompt: str) -> LlmRequest:
+        """Queue a new attempt for a batch task. Does not touch the task's
+        status or retry budget - callers decide when this is appropriate."""
+        with self.SessionLocal() as session:
+            if not session.get(BatchTask, batch_task_id):
+                raise ValueError(f"BatchTask id '{batch_task_id}' not found.")
+
+            new_request = LlmRequest(
+                batch_task_id=batch_task_id,
+                prompt=prompt,
+                status=LlmRequestStatus.QUEUED,
+            )
+            session.add(new_request)
+            session.commit()
+            session.refresh(new_request)
+            return new_request
+
+    def mark_batch_task_failed(self, batch_task_id: int) -> None:
+        """Finalize a batch task as failed - no further attempts will be made."""
+        with self.SessionLocal() as session:
+            batch_task = session.get(BatchTask, batch_task_id)
+            if not batch_task:
+                raise ValueError(f"BatchTask id '{batch_task_id}' not found.")
+
+            batch_task.status = BatchTaskStatus.FAILED
+            batch_task.stopped_at = func.now()
+            session.commit()
+
+    def apply_rate_limit_backoff(self, batch_id: int) -> Batch:
+        """React to a rate-limit hit on an adaptively-throttled batch: lowers
+        the request rate and (re)starts a cooldown. A hit that arrives while
+        the cooldown from a very recent hit is still active is treated as
+        part of the same burst - only the cooldown is refreshed, the rate is
+        not lowered again."""
+        with self.SessionLocal() as session:
+            batch = session.get(Batch, batch_id)
+            if not batch:
+                raise ValueError(f"Batch id '{batch_id}' not found.")
+
+            now = datetime.now(timezone.utc)
+            already_cooling_down = False
+            if batch.last_rate_limit_hit_at is not None:
+                cooldown_seconds = Batch.ADAPTIVE_RATE_COOLDOWN_INTERVALS * (
+                    60.0 / batch.max_tasks_per_minute
+                )
+                already_cooling_down = now < batch.last_rate_limit_hit_at + timedelta(
+                    seconds=cooldown_seconds
+                )
+
+            if not already_cooling_down:
+                batch.max_tasks_per_minute *= Batch.ADAPTIVE_RATE_DECREASE_FACTOR
+
+            batch.last_rate_limit_hit_at = now
+            batch.last_rate_recovery_at = now
+
+            session.commit()
+            session.refresh(batch)
+            return batch
+
+    def advance_rate_recovery(self, batch_id: int) -> Batch:
+        """Called once per dispatch tick for adaptive batches that are not in
+        a rate-limit cooldown. The first observation just establishes the
+        pacing checkpoint; once a full recovery interval has elapsed since
+        the last checkpoint, nudge the rate back up a small step."""
+        previous_rate = None
+        with self.SessionLocal() as session:
+            batch = session.get(Batch, batch_id)
+            if not batch:
+                raise ValueError(f"Batch id '{batch_id}' not found.")
+
+            now = datetime.now(timezone.utc)
+            if batch.last_rate_recovery_at is None:
+                batch.last_rate_recovery_at = now
+            elif (
+                now - batch.last_rate_recovery_at
+            ).total_seconds() >= Batch.ADAPTIVE_RATE_RECOVERY_INTERVAL_SECONDS:
+                previous_rate = batch.max_tasks_per_minute
+                batch.max_tasks_per_minute = min(
+                    Batch.ADAPTIVE_RATE_SANITY_MAX,
+                    batch.max_tasks_per_minute + Batch.ADAPTIVE_RATE_RECOVERY_STEP,
+                )
+                batch.last_rate_recovery_at = now
+
+            session.commit()
+            session.refresh(batch)
+
+        if previous_rate is not None and batch.max_tasks_per_minute > previous_rate:
+            self.add_batch_log(
+                batch_id=batch_id,
+                message=(
+                    f"Rate recovering: increasing from {previous_rate:.2f} "
+                    f"to {batch.max_tasks_per_minute:.2f} tasks/min."
+                ),
+            )
+        return batch
 
     def add_task_log(
         self, batch_task_id: int, message: str, level: LogLevel = LogLevel.INFO
@@ -444,28 +535,19 @@ class BatchOps:
         with self.SessionLocal() as session:
             query = Batch.accessible_by(session.query(Batch), user_id)
             query = Batch.filter_archived(query, archived)
-            batches = (
-                query.outerjoin(Prompt, Batch.prompt_id == Prompt.id)
-                .outerjoin(Endpoint, Batch.endpoint_id == Endpoint.id)
-                .add_columns(
-                    Prompt.name.label("prompt_name"),
-                    Endpoint.name.label("endpoint_name"),
-                )
-                .all()
-            )
+            batches = query.all()
+
             result = []
-            for batch, prompt_name, endpoint_name in batches:
+            for batch in batches:
                 batch_dict = batch.to_dict()
 
-                total_files = len(batch.batch_files)
+                total_tasks = len(batch.batch_tasks)
 
-                processed_files = sum(
-                    1 for bf in batch.batch_files if bf.status != BatchFileStatus.QUEUED
+                processed_tasks = sum(
+                    1 for t in batch.batch_tasks if t.status != BatchTaskStatus.QUEUED
                 )
 
-                batch_dict["progress"] = f"{processed_files}/{total_files}"
-                batch_dict["prompt_name"] = prompt_name
-                batch_dict["endpoint_name"] = endpoint_name
+                batch_dict["progress"] = f"{processed_tasks}/{total_tasks}"
                 result.append(batch_dict)
             return result
 

@@ -21,7 +21,7 @@ class EndpointService:
         ep = self.db.endpoints.add(name, client, provider, user_id, url, token)
         endpoint_internal = self.db.endpoints.get(ep["id"], user_id, show_api=True)
         self.sync_models(endpoint_internal)
-        return ep
+        return self.db.endpoints.get(ep["id"], user_id)
 
     def sync_models(self, endpoint: dict) -> None:
         """Fetch an endpoint's available models, persist their pricing, and record
@@ -58,7 +58,16 @@ class EndpointService:
             "url": url,
             "token": token,
         }
-        return self.endpoint_manager.get_health(temp_endpoint)
+        try:
+            return self.endpoint_manager.get_health(temp_endpoint)
+        except Exception as e:
+            return EngineHealth(False, str(e))
+
+    def update(self, endpoint_id: int, user_id: int, **fields) -> dict:
+        endpoint_internal = self.db.endpoints.update(endpoint_id, user_id, **fields)
+        if "url" in fields or "token" in fields:
+            self.sync_models(endpoint_internal)
+        return self.db.endpoints.get(endpoint_id, user_id)
 
     def get(self, endpoint_id: int, user_id: int, show_api=False) -> dict:
         endpoint = self.db.endpoints.get(endpoint_id, user_id, show_api)
@@ -66,7 +75,10 @@ class EndpointService:
 
     def health(self, endpoint_id: int, user_id: int) -> bool:
         endpoint = self.db.endpoints.get(endpoint_id, user_id, show_api=True)
-        health = self.endpoint_manager.get_health(endpoint)
+        try:
+            health = self.endpoint_manager.get_health(endpoint)
+        except Exception:
+            return False
         return health.healthy
 
     def models(self, endpoint_id: int, user_id: int) -> list[str]:

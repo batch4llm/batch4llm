@@ -10,6 +10,8 @@ interface Props {
     isOpen: boolean;
     onClose: () => void;
     batch: Batch;
+    onViewEndpoint?: () => void;
+    onViewPrompt?: () => void;
 }
 
 // ── Formatting helpers ─────────────────────────────────────────────────────
@@ -69,7 +71,7 @@ function truncate(str: string | undefined | null, n: number): string {
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
-export function BatchDetailModal({ isOpen, onClose, batch }: Props) {
+export function BatchDetailModal({ isOpen, onClose, batch, onViewEndpoint, onViewPrompt }: Props) {
     const [files, setFiles] = useState<BatchFileOverview[]>([]);
     const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
     const [fileDetail, setFileDetail] = useState<BatchFileDetail | null>(null);
@@ -177,14 +179,32 @@ export function BatchDetailModal({ isOpen, onClose, batch }: Props) {
                                     <span className={styles.chipKey}>Model</span>
                                     <span className={styles.chipVal}>{batch.model}</span>
                                 </span>
-                                <span className={styles.chip}>
-                                    <span className={styles.chipKey}>Endpoint</span>
-                                    <span className={styles.chipVal}>{batch.endpoint_name ?? `#${batch.endpoint_id}`}</span>
-                                </span>
-                                <span className={styles.chip}>
-                                    <span className={styles.chipKey}>Prompt</span>
-                                    <span className={styles.chipVal}>{batch.prompt_name ?? `#${batch.prompt_id}`}</span>
-                                </span>
+                                {batch.endpoint_id != null && onViewEndpoint ? (
+                                    <button className={`${styles.chip} ${styles.chipClickable}`} onClick={onViewEndpoint} title="View endpoint">
+                                        <span className={styles.chipKey}>Endpoint</span>
+                                        <span className={styles.chipVal}>{batch.endpoint_name ?? `#${batch.endpoint_id}`}</span>
+                                    </button>
+                                ) : (
+                                    <span className={styles.chip}>
+                                        <span className={styles.chipKey}>Endpoint</span>
+                                        <span className={styles.chipVal}>
+                                            {batch.endpoint_name ?? (batch.endpoint_id != null ? `#${batch.endpoint_id}` : "deleted")}
+                                        </span>
+                                    </span>
+                                )}
+                                {batch.prompt_id != null && onViewPrompt ? (
+                                    <button className={`${styles.chip} ${styles.chipClickable}`} onClick={onViewPrompt} title="View prompt">
+                                        <span className={styles.chipKey}>Prompt</span>
+                                        <span className={styles.chipVal}>{batch.prompt_name ?? `#${batch.prompt_id}`}</span>
+                                    </button>
+                                ) : (
+                                    <span className={styles.chip}>
+                                        <span className={styles.chipKey}>Prompt</span>
+                                        <span className={styles.chipVal}>
+                                            {batch.prompt_name ?? (batch.prompt_id != null ? `#${batch.prompt_id}` : "deleted")}
+                                        </span>
+                                    </span>
+                                )}
                             </div>
                             <div className={styles.stats}>
                                 <div>

@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 
+from batch4llm.manager.database.models.batch import Batch
 from batch4llm.manager.database.models.batch_task import BatchTaskStatus
 from batch4llm.manager.database.models.llm_request import LlmRequestStatus
 
@@ -10,8 +11,17 @@ OUTPUT_PREVIEW_LENGTH = 500
 
 
 class BatchWorkerSettings(BaseModel):
-    max_tasks_per_minute: int = Field(..., gt=0, le=20)
-    max_parallel_tasks: int = Field(..., gt=0, le=20)
+    # Starting point for the request rate. With adaptive_rate_limiting on
+    # (the default), the backend adjusts this up/down automatically in
+    # response to rate-limit errors - this is just where it starts.
+    max_tasks_per_minute: float = Field(
+        default=Batch.ADAPTIVE_RATE_START, gt=0, le=Batch.ADAPTIVE_RATE_SANITY_MAX
+    )
+    # Whether the batch may have more than one request in flight at once.
+    allow_concurrency: bool = True
+    # Automatically throttle down on rate-limit errors (without counting them
+    # as task failures) and recover the rate slowly once they stop.
+    adaptive_rate_limiting: bool = True
     retries_per_failed_task: int = Field(..., gt=-1, le=20)
     failure_threshold_percent: float = Field(..., ge=0.0, le=100.0)
     queue_batch: bool = True
@@ -28,6 +38,7 @@ class BatchRunRequest(BaseModel):
     json_format: Optional[bool] = False
     use_provider_batch: bool = False
     scheduled_at: Optional[datetime] = None
+    name: Optional[str] = Field(default=None, max_length=200)
     # todo: implement/check limits
     batch_worker_settings: BatchWorkerSettings
 
@@ -37,9 +48,9 @@ class BatchData(BaseModel):
     id: int
     name: str
     status: str
-    prompt_id: int
+    prompt_id: Optional[int] = None
     prompt_name: Optional[str] = None
-    endpoint_id: int
+    endpoint_id: Optional[int] = None
     endpoint_name: Optional[str] = None
     progress: Optional[str] = None
     file_reader: str
@@ -59,7 +70,7 @@ class BatchData(BaseModel):
 class BatchFileOverviewData(BaseModel):
     id: int
     batch_id: int
-    file_id: int
+    file_id: Optional[int] = None
     name: str
     status: str
     task_count: int
@@ -89,7 +100,7 @@ class BatchTaskPreviewData(BaseModel):
 class BatchFileDetailData(BaseModel):
     id: int
     batch_id: int
-    file_id: int
+    file_id: Optional[int] = None
     name: str
     status: str
     batch_tasks: list[BatchTaskPreviewData]
@@ -105,8 +116,7 @@ class LlmAttemptData(BaseModel):
 
     The frontend derives the task's result from these: the winning attempt is
     the first COMPLETED one, total cost is the sum, and the retry count is the
-    number of attempts minus one. `reason` is a placeholder until LlmRequest
-    carries a dedicated error field.
+    number of attempts minus one.
     """
 
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
@@ -136,7 +146,7 @@ class BatchTaskDetailData(BaseModel):
     id: int
     batch_id: int
     batch_file_id: int
-    file_id: int
+    file_id: Optional[int] = None
     status: BatchTaskStatus
     prompt_marker: Optional[str] = None
     depends_on_batch_task_id: Optional[int] = None

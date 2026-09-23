@@ -8,11 +8,24 @@ function formatDate(s: string): string {
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function IconTrash() {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h18"/>
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+        </svg>
+    );
+}
+
 type Props = {
     prompt: Prompt;
+    onView?: (prompt: Prompt) => void;
+    onDelete?: (prompt: Prompt) => void;
 };
 
-export function PromptCard({ prompt }: Props) {
+export function PromptCard({ prompt, onView, onDelete }: Props) {
     const isMulti = prompt.multi_prompt;
     const stepCount = prompt.step_count;
 
@@ -22,7 +35,13 @@ export function PromptCard({ prompt }: Props) {
     }
 
     return (
-        <div className={`${styles.card} ${isMulti ? styles.cardMulti : ""}`}>
+        <div
+            className={`${styles.card} ${isMulti ? styles.cardMulti : ""}`}
+            role={onView ? "button" : undefined}
+            tabIndex={onView ? 0 : undefined}
+            onClick={() => onView?.(prompt)}
+            onKeyDown={e => onView && (e.key === "Enter" || e.key === " ") && onView(prompt)}
+        >
             <div className={styles.head}>
                 <h3 className={styles.name} title={prompt.name}>{prompt.name}</h3>
                 {isMulti && (
@@ -50,6 +69,15 @@ export function PromptCard({ prompt }: Props) {
 
             <div className={styles.foot}>
                 <span>{formatDate(prompt.created_at)}</span>
+                {onDelete && (
+                    <button
+                        className={styles.deleteBtn}
+                        title="Delete prompt"
+                        onClick={(e) => { e.stopPropagation(); onDelete(prompt); }}
+                    >
+                        <IconTrash />
+                    </button>
+                )}
             </div>
         </div>
     );

@@ -69,10 +69,13 @@ class FileManager:
 
         file_path = file_record.path
 
-        if self.storage.delete(file_path):
-            self.db.files.delete(file_id, user_id)
-            return True
-        return False
+        # Delete the DB row first: it's what enforces the batch-reference
+        # check (raises ResourceInUseError), and it must succeed before we
+        # touch storage so a rejected delete never leaves an orphaned DB
+        # row pointing at a file that's already gone from disk.
+        self.db.files.delete(file_id, user_id)
+        self.storage.delete(file_path)
+        return True
 
     def list(self) -> list[str]:
         return self.storage.list()
