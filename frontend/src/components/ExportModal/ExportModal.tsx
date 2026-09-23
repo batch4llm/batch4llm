@@ -7,8 +7,8 @@ import styles from "./ExportModal.module.css";
 const EXPORT_MODES = [
     { value: "raw_csv",           label: "Raw CSV" },
     { value: "raw_excel",         label: "Raw Excel" },
-    { value: "long_format_csv",   label: "Long Format CSV" },
-    { value: "long_format_excel", label: "Long Format Excel" },
+    { value: "long_format_csv",   label: "Convert JSON CSV" },
+    { value: "long_format_excel", label: "Convert JSON Excel" },
 ];
 
 type Props = {
