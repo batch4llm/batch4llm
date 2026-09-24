@@ -1,20 +1,10 @@
-x-worker-env: &worker-env
-  DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-  MINIO_ENDPOINT: minio:9000
-  MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
-  MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-  MINIO_BUCKET: llm-files
-  MINIO_SECURE: "false"
+name: batch4llm
 
 services:
   migrate:
-    image: ghcr.io/batch4llm/backend:latest
+    image: ghcr.io/batch4llm/backend:${BATCH4LLM_VERSION:-latest}
     command: sh -c "b4llm db upgrade && b4llm user ensure-admin"
-    environment:
-      <<: *worker-env
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    env_file: .env
     depends_on:
       db:
         condition: service_healthy
@@ -37,12 +27,12 @@ services:
       - frontend
 
   backend:
-    image: ghcr.io/batch4llm/backend:latest
+    image: ghcr.io/batch4llm/backend:${BATCH4LLM_VERSION:-latest}
     command: uvicorn batch4llm.app:app --host 0.0.0.0 --port 8000
     expose:
       - "8000"
+    env_file: .env
     environment:
-      <<: *worker-env
       MINIO_PUBLIC_URL: http://localhost/storage
       AUTH_REQUIRED: "true"
       SECURE_COOKIES: "true"
@@ -64,7 +54,7 @@ services:
         condition: service_started
 
   frontend:
-    image: ghcr.io/batch4llm/frontend:latest
+    image: ghcr.io/batch4llm/frontend:${BATCH4LLM_VERSION:-latest}
     expose:
       - "80"
     labels:
@@ -77,10 +67,9 @@ services:
       - backend
 
   worker:
-    image: ghcr.io/batch4llm/backend:latest
+    image: ghcr.io/batch4llm/backend:${BATCH4LLM_VERSION:-latest}
     command: celery -A batch4llm.celery.worker worker --loglevel=info
-    environment:
-      <<: *worker-env
+    env_file: .env
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -90,10 +79,9 @@ services:
         condition: service_started
 
   beat:
-    image: ghcr.io/batch4llm/backend:latest
+    image: ghcr.io/batch4llm/backend:${BATCH4LLM_VERSION:-latest}
     command: celery -A batch4llm.celery.worker beat --loglevel=info
-    environment:
-      <<: *worker-env
+    env_file: .env
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -102,10 +90,7 @@ services:
 
   db:
     image: postgres:18
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+    env_file: .env
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
@@ -121,11 +106,9 @@ services:
       - redis_data:/data
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
     container_name: minio
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    env_file: .env
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
