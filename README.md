@@ -5,13 +5,14 @@
 
 <br>
 
-## Setup (with Pre-built Docker Images)
-This is recommended for production.
+## Setup (Production Server)
+Runs the pre-built Docker images with HTTPS via Let's Encrypt. This is recommended for production.
 
 ### Prerequisites
 
 - [Docker](https://www.docker.com/)
 - [Docker Compose](https://docs.docker.com/compose/)
+- A public hostname (`DOMAIN`) that resolves to the server, with ports 80 and 443 reachable (Let's Encrypt validates ownership over port 80)
 
 ### Steps
 
@@ -20,15 +21,28 @@ This is recommended for production.
    mkdir batch4llm
    cd batch4llm
 ```
-2. Place the [compose.yaml](/compose.yaml) file inside this directory.
+2. Download the production compose file and the example environment file:
 ```
-   curl -L https://raw.githubusercontent.com/batch4llm/batch4llm/main/compose.yaml -o compose.yaml
+   curl -L https://raw.githubusercontent.com/batch4llm/batch4llm/main/compose.prod.yaml -o compose.yaml
+   curl -L https://raw.githubusercontent.com/batch4llm/batch4llm/main/.env.example -o .env
 ```
+3. Edit `.env`: replace every `change_me` with a real value (e.g. generated via `openssl rand -hex 24`), set `DOMAIN` and `ACME_EMAIL`, and pin `BATCH4LLM_VERSION` to a [release](https://github.com/batch4llm/batch4llm/releases) such as `v0.1.0`.
 
-3. Start the service:
+4. Start the service:
 ```
    docker compose up -d
 ```
+
+All services restart automatically after a reboot. Data lives in the named Docker volumes `batch4llm_postgres_data`, `batch4llm_minio_data`, `batch4llm_redis_data` and `batch4llm_letsencrypt`.
+
+### Updating
+
+Set `BATCH4LLM_VERSION` in `.env` to the new release, then:
+```
+   docker compose pull
+   docker compose up -d
+```
+Database migrations run automatically on startup (via the `migrate` service) before the backend and workers start. If a release changes `compose.prod.yaml` itself, download it again as in step 2 (your `.env` stays untouched).
 
 ### Admin account
 
@@ -39,13 +53,17 @@ If you skip this, create the first admin manually instead:
    docker compose exec backend b4llm user create <username> <password> --admin
 ```
 
-### HTTPS
+## Local Quick Start (Pre-built Images, HTTP)
+To try batch4llm on your own machine without a domain, use the plain [compose.yaml](/compose.yaml). It serves HTTP on port 80 and is meant for `http://localhost` only — login cookies are marked `Secure`, which browsers accept over plain HTTP only on `localhost`.
 
-By default, Traefik only serves plain HTTP on port 80. To enable HTTPS via Let's Encrypt, set `DOMAIN` and `ACME_EMAIL` in your `.env` (see `.env.example`) and start with the `compose.prod.yaml` override:
 ```
-   docker compose -f compose.yaml -f compose.prod.yaml up -d
+   mkdir batch4llm && cd batch4llm
+   curl -L https://raw.githubusercontent.com/batch4llm/batch4llm/main/compose.yaml -o compose.yaml
+   curl -L https://raw.githubusercontent.com/batch4llm/batch4llm/main/.env.example -o .env
+   # replace every change_me in .env
+   docker compose up -d
 ```
-This adds a `websecure` (443) entrypoint with automatic certificates and redirects plain HTTP traffic to HTTPS. `DOMAIN` must be a public hostname that resolves to this server, since Let's Encrypt validates ownership over port 80.
+Then open http://localhost.
 
 
 ## Setup (Build from Repository)
