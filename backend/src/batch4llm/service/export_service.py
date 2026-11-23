@@ -29,11 +29,21 @@ class ExportService:
                     (r for r in task.llm_requests if r.status.value == "COMPLETED"),
                     None,
                 )
+                # Provider batches never mark single requests as RUNNING, so
+                # their started_at is always NULL - fall back to the time the
+                # whole batch was submitted to the provider.
+                if batch_export.batch.use_provider_batch:
+                    request_started_at = batch_export.batch.started_at
+                else:
+                    request_started_at = (
+                        successful_request.started_at if successful_request else None
+                    )
                 long_format.append(
                     {
                         "batch_id": batch_id,
                         "batch_task_id": task.id,
-                        "status": str(task.status),
+                        "status": task.status.value,
+                        "request_started_at": request_started_at,
                         "client": batch_export.endpoint.client,
                         "provider": batch_export.endpoint.provider,
                         "model": batch_export.batch.model,
