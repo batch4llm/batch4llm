@@ -80,6 +80,7 @@ class ExpandedExportMode(BaseExportMode):
             )
         else:
             excel_buffer = BytesIO()
+            df = self.strip_timezones(df)
             df = df.replace({r"[\r\n]+": " "}, regex=True)
             df = df.replace(r"[\x00-\x1F\x7F-\x9F]", " ", regex=True)
             df.to_excel(excel_buffer, index=False)
